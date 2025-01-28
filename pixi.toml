@@ -1,0 +1,17 @@
+[project]
+authors = ["Alex Kerney <abk@mac.com>"]
+channels = ["conda-forge"]
+description = "Add a short description here"
+name = "climatology_py_dash"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+edit = "marimo edit"
+app = "marimo run 'NERACOOS Climatology.py'"
+
+[dependencies]
+erddapy = ">=2.2.3,<3"
+xarray = ">=2025.1.1,<2026"
+marimo = ">=0.10.16,<0.11"
+altair = ">=5.5.0,<6"
