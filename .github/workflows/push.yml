@@ -9,7 +9,7 @@ concurrency:
 jobs:
   build:
     name: Build Docker Image
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
 
     steps:
@@ -47,7 +47,7 @@ jobs:
   push:
     name: Push Docker Image and update GitOps config
     needs: build
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     
     if: |
