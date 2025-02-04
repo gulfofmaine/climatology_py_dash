@@ -1,0 +1,15 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: climatology-py-dash
+spec:
+  rules:
+    - http:
+        paths:
+        - path: /climatology/
+          pathType: Prefix
+          backend:
+            service:
+              name: climatology
+              port:
+                number: 8080

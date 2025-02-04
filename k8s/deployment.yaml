@@ -1,0 +1,36 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: climatology
+  labels:
+    app: climatology
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: climatology
+  template:
+    metadata:
+      labels:
+        app: climatology
+    spec:
+      containers:
+      - name: climatology
+        image: gmri/neracoos-climatology-py
+        ports:
+        - containerPort: 8080
+          name: http
+        livenessProbe:
+          httpGet:
+            port: http
+            path: /health
+          # If it fails 3 times in 30 seconds, it will be killed
+          failureThreshold: 3
+          periodSeconds: 10
+        startupProbe:
+          httpGet:
+            port: http
+            path: /health
+          # If it fails 30 times in 300 seconds upon startup, it will be killed
+          failureThreshold: 30
+          periodSeconds: 10
