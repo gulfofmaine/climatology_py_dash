@@ -84,21 +84,14 @@ jobs:
         docker tag gmri/neracoos-climatology-py-dash:latest gmri/neracoos-climatology-py-dash:${{ steps.tagName.outputs.tag }}
         docker push gmri/neracoos-climatology-py-dash:${{ steps.tagName.outputs.tag }}
 
-    - name: Generate a token
-      id: generate-token
-      uses: actions/create-github-app-token@v1
-      with:
-          app-id: ${{ secrets.APP_ID }}
-          private-key: ${{ secrets.APP_PRIVATE_KEY }}
-
     - name: Make GitOps directory
       run: mkdir gitops
 
     - name: Clone GitOps config repo
       working-directory: ./gitops
       env:
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-      run: git clone "https://x-access-token:$GH_TOKEN@github.com/gulfofmaine/neracoos-aws-cd.git"
+          GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
+      run: git clone "https://$GITOPS_TOKEN@github.com/gulfofmaine/neracoos-aws-cd.git"
 
     - name: Update GitOps config repo
       working-directory: ./gitops/neracoos-aws-cd
