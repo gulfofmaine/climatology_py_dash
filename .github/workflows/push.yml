@@ -57,7 +57,7 @@ jobs:
     steps:
     - name: "Checkout"
       uses: actions/checkout@v2
-      
+
     - name: Get tag name
       id: tagName
       run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
@@ -98,7 +98,7 @@ jobs:
       working-directory: ./gitops
       env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
-      run: git clone "https://$GH_TOKEN@github.com/gulfofmaine/neracoos-aws-cd.git"
+      run: git clone "https://x-access-token:$GH_TOKEN@github.com/gulfofmaine/neracoos-aws-cd.git"
 
     - name: Update GitOps config repo
       working-directory: ./gitops/neracoos-aws-cd
