@@ -23,14 +23,14 @@ spec:
         livenessProbe:
           httpGet:
             port: http
-            path: /health
+            path: /climatology/health
           # If it fails 3 times in 30 seconds, it will be killed
           failureThreshold: 3
           periodSeconds: 10
         startupProbe:
           httpGet:
             port: http
-            path: /health
+            path: /climatology/health
           # If it fails 30 times in 300 seconds upon startup, it will be killed
           failureThreshold: 30
           periodSeconds: 10
