@@ -55,6 +55,9 @@ jobs:
       && github.ref == 'refs/heads/main'
 
     steps:
+    - name: "Checkout"
+      uses: actions/checkout@v2
+      
     - name: Get tag name
       id: tagName
       run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
