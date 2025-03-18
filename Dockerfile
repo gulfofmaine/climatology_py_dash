@@ -8,7 +8,7 @@ COPY --link pixi.lock pixi.toml ./
 RUN --mount=type=cache,id=pixi_climatology,target=/root/.cache/rattler/cache \
     pixi install --frozen
 
-COPY --link climatology.py ./
+COPY --link climatology.py neracoos.png ./
 
 EXPOSE 8080
 
