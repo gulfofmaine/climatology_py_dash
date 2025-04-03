@@ -90,16 +90,19 @@ def _(mo, platform):
 
 
 @app.cell
-def _(platform):
+def _(mo, platform):
     timeseries = {}
-    for r in platform["properties"]["readings"]:
-        if r["depth"]:
-            name = f"{r['data_type']['long_name']} @ {r['depth']}m"
+    try:
+        for r in platform["properties"]["readings"]:
+            if r["depth"]:
+                name = f"{r['data_type']['long_name']} @ {r['depth']}m"
 
-        else:
-            name = r["data_type"]["long_name"]
-        r["app_name"] = name
-        timeseries[name] = r
+            else:
+                name = r["data_type"]["long_name"]
+            r["app_name"] = name
+            timeseries[name] = r
+    except TypeError:
+        mo.stop(True)
     timeseries = dict(sorted(timeseries.items()))
     return name, r, timeseries
 
@@ -141,14 +144,17 @@ def _(mo, ts):
 @app.cell
 def _(erddapy, mo, ts):
     with mo.status.spinner(title="Loading data from ERDDAP"):
-        e = erddapy.ERDDAP(ts["server"], protocol="tabledap")
-        e.dataset_id = ts["dataset"]
-        e.variables = ["time", ts["variable"]]
-        e.constraints = ts["constraints"] or {}
-        df_all = e.to_pandas(
-            index_col="time (UTC)",
-            parse_dates=True,
-        ).dropna()
+        try:
+            e = erddapy.ERDDAP(ts["server"], protocol="tabledap")
+            e.dataset_id = ts["dataset"]
+            e.variables = ["time", ts["variable"]]
+            e.constraints = ts["constraints"] or {}
+            df_all = e.to_pandas(
+                index_col="time (UTC)",
+                parse_dates=True,
+            ).dropna()
+        except TypeError:
+            mo.stop(True)
     return df_all, e
 
 
