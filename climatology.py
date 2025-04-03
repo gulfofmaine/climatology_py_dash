@@ -9,6 +9,7 @@ def _():
     import base64
     from datetime import datetime, timedelta
     from io import BytesIO
+
     return BytesIO, base64, datetime, timedelta
 
 
@@ -22,6 +23,7 @@ def _():
     import marimo as mo
     import altair as alt
     import numpy as np
+
     return Image, alt, erddapy, httpx, mo, np, pd, xr
 
 
@@ -33,7 +35,9 @@ def _(pd):
 
 @app.cell
 def _(httpx):
-    platform_res = httpx.get("https://buoybarn.neracoos.org/api/platforms/?visibility=climatology")
+    platform_res = httpx.get(
+        "https://buoybarn.neracoos.org/api/platforms/?visibility=climatology",
+    )
     return (platform_res,)
 
 
@@ -75,9 +79,10 @@ def _(mo, platforms, query_params):
 @app.cell
 def _(mo, platform_dropdown):
     platform = platform_dropdown.value
-    if platform == None:
+    if platform is None:
         platform_callout = mo.callout(
-            "Please select a platform to view climatologies for", kind="warn"
+            "Please select a platform to view climatologies for",
+            kind="warn",
         )
         mo.output.append(platform_callout)
     return platform, platform_callout
@@ -85,7 +90,7 @@ def _(mo, platform_dropdown):
 
 @app.cell
 def _(mo, platform):
-    mo.stop(platform == None)
+    mo.stop(platform is None)
     return
 
 
@@ -127,9 +132,10 @@ def _(mo, query_params, timeseries):
 @app.cell
 def _(mo, timeseries_dropdown):
     ts = timeseries_dropdown.value
-    if ts == None:
+    if ts is None:
         ts_callout = mo.callout(
-            "Please select a data type to compute climatologies for", kind="warn"
+            "Please select a data type to compute climatologies for",
+            kind="warn",
         )
         mo.output.append(ts_callout)
     return ts, ts_callout
@@ -137,7 +143,7 @@ def _(mo, timeseries_dropdown):
 
 @app.cell
 def _(mo, ts):
-    mo.stop(ts == None)
+    mo.stop(ts is None)
     return
 
 
@@ -285,7 +291,8 @@ def _(DAILY, alt, average_period_dropdown, column, df_no_index, mo, pd):
             alt.Chart(means)
             .mark_bar()
             .encode(
-                alt.X("count", bin=True, title="Values per month"), y="count()"
+                alt.X("count", bin=True, title="Values per month"),
+                y="count()",
             )
         )
         threshold = mo.ui.number(
@@ -306,17 +313,17 @@ def _(DAILY, alt, average_period_dropdown, column, df_no_index, mo, pd):
                         [
                             threshold,
                             mo.md("""
-                With the data being dynamic and the rate of observations possibly changing over time, we are only able to set reasonable defaults for a minimum number of observations to be included in a day/month to be elgible to generate climatology from.
+                With the data being dynamic and the rate of observations possibly changing over time, we are only able to set reasonable defaults for a minimum number of observations to be included in a day/month to be eligible to generate climatology from.
 
                 - The default daily threshold is 18 considering a minimum of 3/4 hourly obsevations
                 - The default monthly threshold is 20 for 2/3rds of daily observations
                 """),
-                        ]
+                        ],
                     ),
                     _threshold_chart,
-                ]
+                ],
             ),
-        }
+        },
     )
     return means, threshold
 
@@ -359,14 +366,14 @@ def _(
 
     if average_period_dropdown.value == DAILY:
         clim_df["Date"] = clim_df["Date"].apply(
-            lambda x: year + timedelta(days=x - 1)
+            lambda x: year + timedelta(days=x - 1),
         )
         clim_df = clim_df.rename(
-            columns={"idxmin": "Min date", "idxmax": "Max date"}
+            columns={"idxmin": "Min date", "idxmax": "Max date"},
         )
     else:
         clim_df["Date"] = pd.to_datetime(
-            clim_df["Date"].apply(lambda x: f"{year.year}-{x}")
+            clim_df["Date"].apply(lambda x: f"{year.year}-{x}"),
         )
         clim_df = clim_df.rename(
             {
@@ -387,7 +394,7 @@ def _(
             "mean": mean_range_name,
             "min": min_range_name,
             "max": max_range_name,
-        }
+        },
     )
     return (
         clim_df,
@@ -460,11 +467,11 @@ def _(
 
     if average_period_dropdown.value == "Daily":
         df_year["Date"] = df_year["Date"].apply(
-            lambda x: year + timedelta(days=x - 1)
+            lambda x: year + timedelta(days=x - 1),
         )
     else:
         df_year["Date"] = pd.to_datetime(
-            df_year["Date"].apply(lambda x: f"{year.year}-{x}")
+            df_year["Date"].apply(lambda x: f"{year.year}-{x}"),
         )
         df_year = df_year.rename({"Date": "Month"}, axis=1)
     return df_year, year_group_by
@@ -509,19 +516,19 @@ def _(
     _output = BytesIO()
     _pil_image.save(_output, format="PNG")
     _base64_images = [
-        "data:image/png;base64," + base64.b64encode(_output.getvalue()).decode()
+        "data:image/png;base64," + base64.b64encode(_output.getvalue()).decode(),
     ]
     _data_max = np.ceil(
-        max([df_year["mean"].max(), clim_df[max_range_name].max()])
+        max([df_year["mean"].max(), clim_df[max_range_name].max()]),
     )
     _image_df = pd.DataFrame(
         {
-            "Date"
-            if average_period_dropdown.value == "Daily"
-            else "Month": clim_df["Date"].max(),
+            "Date" if average_period_dropdown.value == "Daily" else "Month": clim_df[
+                "Date"
+            ].max(),
             "y": _data_max,
             "image": _base64_images,
-        }
+        },
     )
 
     image = (
@@ -537,7 +544,11 @@ def _(
             ),
         )
         .mark_image(
-            width=219, height=46, align="right", baseline="bottom", clip=False
+            width=219,
+            height=46,
+            align="right",
+            baseline="bottom",
+            clip=False,
         )
         .encode(
             x="Date" if average_period_dropdown.value == "Daily" else "Month",
@@ -563,13 +574,13 @@ def _(e, end_year_dropdown, mo, platform, start_year_dropdown):
     mo.hstack(
         [
             mo.md(
-                f"[Platform on Mariners Dashboard](https://mariners.neracoos.org/platform/{platform['id']})"
+                f"[Platform on Mariners Dashboard](https://mariners.neracoos.org/platform/{platform['id']})",
             ),
             mo.md(f"[Dataset on ERDDAP]({e.get_download_url()})"),
             mo.md(
-                f"Climatology calculated from {start_year_dropdown.value} to {end_year_dropdown.value}"
+                f"Climatology calculated from {start_year_dropdown.value} to {end_year_dropdown.value}",
             ),
-        ]
+        ],
     )
     return
 
@@ -591,7 +602,7 @@ def _(
         clim_df,
         df_year.rename(
             {
-                "mean": f"{'Daily' if average_period_dropdown.value == DAILY else 'Monthly'} means for {year_dropdown.value}"
+                "mean": f"{'Daily' if average_period_dropdown.value == DAILY else 'Monthly'} means for {year_dropdown.value}",
             },
             axis=1,
         ),

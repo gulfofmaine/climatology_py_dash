@@ -1,8 +1,10 @@
 # Climatology Py Dash
 
-Generate climatologies for NERACOOS data on the fly, based on what is avaliable on the Mariner's Dashboard.
+Generate climatologies for NERACOOS data on the fly, based on what is available
+on the Mariner's Dashboard.
 
-This is built with [Marimo](https://marimo.io/) which is a hybrid notebook and app framework to allow rapid iteration and then a Streamlit-like experiance.
+This is built with [Marimo](https://marimo.io/) which is a hybrid notebook and
+app framework to allow rapid iteration and then a Streamlit-like experience.
 
 ## Commands
 

@@ -22,20 +22,10 @@
         "position": null
       },
       {
-        "position": [
-          1,
-          2,
-          8,
-          4
-        ]
+        "position": [1, 2, 8, 4]
       },
       {
-        "position": [
-          1,
-          15,
-          20,
-          5
-        ]
+        "position": [1, 15, 20, 5]
       },
       {
         "position": null
@@ -44,20 +34,10 @@
         "position": null
       },
       {
-        "position": [
-          1,
-          6,
-          8,
-          4
-        ]
+        "position": [1, 6, 8, 4]
       },
       {
-        "position": [
-          14,
-          21,
-          6,
-          5
-        ]
+        "position": [14, 21, 6, 5]
       },
       {
         "position": null
@@ -72,12 +52,7 @@
         "position": null
       },
       {
-        "position": [
-          1,
-          10,
-          8,
-          4
-        ]
+        "position": [1, 10, 8, 4]
       },
       {
         "position": null
