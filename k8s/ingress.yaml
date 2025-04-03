@@ -6,10 +6,10 @@ spec:
   rules:
     - http:
         paths:
-        - path: /climatology/
-          pathType: Prefix
-          backend:
-            service:
-              name: climatology
-              port:
-                number: 8080
+          - path: /climatology/
+            pathType: Prefix
+            backend:
+              service:
+                name: climatology
+                port:
+                  number: 8080
