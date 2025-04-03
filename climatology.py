@@ -499,7 +499,7 @@ def _(
     ts,
     year_dropdown,
 ):
-    _pil_image = Image.open("./neracoos.png")
+    _pil_image = Image.open("./public/neracoos.png")
     _output = BytesIO()
     _pil_image.save(_output, format="PNG")
     _base64_images = [
@@ -524,6 +524,9 @@ def _(
             title=alt.Title(
                 f"{ts['app_name']} at {platform['id']} for {start_year_dropdown.value} thru {max([end_year_dropdown.value, year_dropdown.value])}",
                 baseline="bottom",
+                # align="right",
+                anchor="start",
+                dx=40,
                 offset=-46,
             ),
         )
