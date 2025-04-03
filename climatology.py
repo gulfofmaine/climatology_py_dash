@@ -33,7 +33,7 @@ def _(pd):
 
 @app.cell
 def _(httpx):
-    platform_res = httpx.get("https://buoybarn.neracoos.org/api/platforms/")
+    platform_res = httpx.get("https://buoybarn.neracoos.org/api/platforms/?visibility=climatology")
     return (platform_res,)
 
 
