@@ -59,7 +59,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libwebp-base-1.5.0-h851e524_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libxcb-1.17.0-h8a09558_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.1-hb9d3cd8_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/marimo-0.10.19-py313h3617017_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/marimo-0.13.6-py313hd5f5364_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-3.6-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.2-py313h8060acc_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/narwhals-1.25.0-pyhd8ed1ab_0.conda
@@ -157,7 +157,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libwebp-base-1.5.0-h0886dbf_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libxcb-1.17.0-h262b8f6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/libzlib-1.3.1-h86ecc28_2.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/marimo-0.10.19-py313h669626e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/marimo-0.13.6-py313he159727_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-3.6-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/markupsafe-3.0.2-py313h7815b11_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/narwhals-1.25.0-pyhd8ed1ab_0.conda
@@ -249,7 +249,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libxcb-1.17.0-hdb1d25a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/libzlib-1.3.1-h8359307_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/llvm-openmp-19.1.7-hdb05f8b_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/marimo-0.10.19-py313h9a4da87_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/marimo-0.13.6-py313h6fa1262_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-3.6-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/markupsafe-3.0.2-py313ha9b7d5b_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/narwhals-1.25.0-pyhd8ed1ab_0.conda
@@ -1469,9 +1469,9 @@ packages:
   license_family: APACHE
   size: 280830
   timestamp: 1736986295869
-- conda: https://conda.anaconda.org/conda-forge/linux-64/marimo-0.10.19-py313h3617017_0.conda
-  sha256: 23d87ca4b2bb26dfb3d8372b4f3012ca1d6d267fadf2984abbbef4965b1a6278
-  md5: 46081a42c666b79ca1ef2a1bfa250738
+- conda: https://conda.anaconda.org/conda-forge/linux-64/marimo-0.13.6-py313hd5f5364_0.conda
+  sha256: b9932790259a33cb58e73be7d9ab283d69755e48c698e018f9a8a1962b2d28ac
+  md5: 9ae380e876cc533736fce7fa180b19fa
   depends:
   - python
   - click >=8.0,<9
@@ -1494,39 +1494,11 @@ packages:
   - python_abi 3.13.* *_cp313
   license: Apache-2.0
   license_family: APACHE
-  size: 7043855
-  timestamp: 1738359820464
-- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/marimo-0.10.19-py313h669626e_0.conda
-  sha256: 2218905c134dd88b538cbcf9955fff7a189739357bf405708de273c259f18d94
-  md5: b5b90d7451bd08f91fc24c734ad92ffc
-  depends:
-  - python
-  - click >=8.0,<9
-  - jedi >=0.18.0
-  - markdown >=3.4,<4
-  - pymdown-extensions >=10,<11
-  - pygments >=2.13,<3
-  - tomlkit >=0.12.0
-  - pyyaml >=6.0
-  - uvicorn >=0.22.0
-  - starlette >=0.26.1,!=0.36.0
-  - websockets >=10
-  - pycrdt >=0.11.0,<0.12.0
-  - docutils >=0.16.0
-  - psutil >=5.0
-  - itsdangerous >=2
-  - narwhals >=1.12.0
-  - ruff
-  - packaging
-  - python 3.13.* *_cp313
-  - python_abi 3.13.* *_cp313
-  license: Apache-2.0
-  license_family: APACHE
-  size: 7048212
-  timestamp: 1738359826822
-- conda: https://conda.anaconda.org/conda-forge/osx-arm64/marimo-0.10.19-py313h9a4da87_0.conda
-  sha256: 9c755c9f933ad358c5cf59e25574ed5d9651289ed091b045b7eb4d33002dd42c
-  md5: f761e48921c8113f7233d3feb9df6d3a
+  size: 7462205
+  timestamp: 1746558796650
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/marimo-0.13.6-py313he159727_0.conda
+  sha256: 9ae9dd16a128b26581a953118ca8da2e25eac320982205da7355a7d77e4de524
+  md5: 02562a7b9c6c85ba2ebe158b40b9345f
   depends:
   - python
   - click >=8.0,<9
@@ -1550,8 +1522,36 @@ packages:
   - python_abi 3.13.* *_cp313
   license: Apache-2.0
   license_family: APACHE
-  size: 7049030
-  timestamp: 1738359958343
+  size: 7466213
+  timestamp: 1746558796576
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/marimo-0.13.6-py313h6fa1262_0.conda
+  sha256: 8c3fe9a60c5ce36ccc6ddf7823795fcbcf4342460674968be2b850bc89e3b39a
+  md5: ef4bb2752107c900fab319faf6896e22
+  depends:
+  - python
+  - click >=8.0,<9
+  - jedi >=0.18.0
+  - markdown >=3.4,<4
+  - pymdown-extensions >=10,<11
+  - pygments >=2.13,<3
+  - tomlkit >=0.12.0
+  - pyyaml >=6.0
+  - uvicorn >=0.22.0
+  - starlette >=0.26.1,!=0.36.0
+  - websockets >=10
+  - pycrdt >=0.11.0,<0.12.0
+  - docutils >=0.16.0
+  - psutil >=5.0
+  - itsdangerous >=2
+  - narwhals >=1.12.0
+  - ruff
+  - packaging
+  - python 3.13.* *_cp313
+  - python_abi 3.13.* *_cp313
+  license: Apache-2.0
+  license_family: APACHE
+  size: 7467505
+  timestamp: 1746558865052
 - conda: https://conda.anaconda.org/conda-forge/noarch/markdown-3.6-pyhd8ed1ab_0.conda
   sha256: fce1fde00359696983989699c00f9891194c4ebafea647a8d21b7e2e3329b56e
   md5: 06e9bebf748a0dea03ecbe1f0e27e909
@@ -1876,8 +1876,6 @@ packages:
   - python >=3.13,<3.14.0a0
   - python_abi 3.13.* *_cp313
   - tk >=8.6.13,<8.7.0a0
-  arch: x86_64
-  platform: linux
   license: HPND
   size: 41774632
   timestamp: 1735929847800
@@ -1897,8 +1895,6 @@ packages:
   - python >=3.13,<3.14.0a0
   - python_abi 3.13.* *_cp313
   - tk >=8.6.13,<8.7.0a0
-  arch: aarch64
-  platform: linux
   license: HPND
   size: 41871368
   timestamp: 1735931618449
@@ -1919,8 +1915,6 @@ packages:
   - python >=3.13,<3.14.0a0 *_cp313
   - python_abi 3.13.* *_cp313
   - tk >=8.6.13,<8.7.0a0
-  arch: arm64
-  platform: osx
   license: HPND
   size: 42025320
   timestamp: 1735929984606
