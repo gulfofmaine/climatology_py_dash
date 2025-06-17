@@ -138,7 +138,8 @@ def _(loaded_ts):
     try:
         df = pd.concat(loaded_ts.values(), axis=1)
     except ValueError:
-        mo.output.append(
+        mo.stop(
+            True,
             common.admonition(
                 "",
                 title="Please select a platform and timeseries",

@@ -133,35 +133,41 @@ def _(selected_ts_keys):
     return
 
 
+@app.cell
+def _(standard_name_dropdown, standards):
+    unit = standards[standard_name_dropdown.value]["units"]
+    return (unit,)
+
+
 @app.function
 @mo.cache
-def load_ts(ts: dict) -> pd.DataFrame:
+def load_ts(ts: dict, col_name: str) -> pd.DataFrame:
     df = common.load_ts_from_erddap(ts)
     columns = list(df.columns)
-    columns[0] = ts["data_type"]["standard_name"]
+    columns[0] = col_name
     df.columns = columns
     return df
 
 
 @app.cell
-def _(platform_options, selected_ts_keys, standard_name_dropdown):
+def _(platform_options, selected_ts_keys, unit):
     _wide_dfs = []
 
     with mo.status.spinner(title="Loading data from ERDDAP"):
         for _ts_name in selected_ts_keys.value:
             _ts = platform_options[_ts_name]
-            _df = load_ts(_ts)
+            _df = load_ts(_ts, _ts_name)
             try:
                 del _df["Timeseries"]
             except KeyError:  # weird caching
                 pass
-            _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
+            # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
             _wide_dfs.append(_df)
 
         wide_df = pd.concat(_wide_dfs, axis=1)
         wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
         wide_melted = wide_melted.rename(
-            columns={"variable": "Timeseries", "value": standard_name_dropdown.value},
+            columns={"variable": "Timeseries", "value": unit},
         )
         wide_melted = wide_melted.set_index("time (UTC)")
     return wide_df, wide_melted
@@ -220,18 +226,18 @@ def _(date_range, wide_melted):
 
 
 @app.cell
-def _(filtered_df, standard_name_dropdown):
+def _(filtered_df, standard_name_dropdown, standards, unit):
     alt.data_transformers.disable_max_rows()
 
     _logo = common.neracoos_logo(
         filtered_df.index.max()[0],
-        standard_name_dropdown.value,
+        standards[standard_name_dropdown.value]["long_name"],
     )
 
     _chart = (
         alt.Chart(filtered_df.reset_index())
         .mark_line()
-        .encode(x="time (UTC)", y=standard_name_dropdown.value, color="Timeseries")
+        .encode(x="time (UTC)", y=unit, color="Timeseries")
     )
 
     mo.ui.altair_chart(_chart + _logo)

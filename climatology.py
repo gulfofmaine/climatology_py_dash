@@ -120,7 +120,8 @@ def _(platform_dropdown, timeseries_dropdown):
 @app.cell
 def _(platform):
     if platform is None:
-        mo.output.append(
+        mo.stop(
+            True,
             common.admonition(
                 "",
                 title="Please select a platform to view climatologies for",
@@ -131,17 +132,11 @@ def _(platform):
 
 
 @app.cell
-def _(platform):
-    if platform is None:
-        mo.stop(True)
-    return
-
-
-@app.cell
 def _(timeseries_dropdown):
     ts = timeseries_dropdown.value
     if ts is None:
-        mo.output.append(
+        mo.stop(
+            True,
             common.admonition(
                 "",
                 title="Please select a data type to compute climatologies for",
@@ -149,12 +144,6 @@ def _(timeseries_dropdown):
             ),
         )
     return (ts,)
-
-
-@app.cell
-def _(ts):
-    mo.stop(ts is None)
-    return
 
 
 @app.cell
