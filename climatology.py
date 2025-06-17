@@ -1,40 +1,40 @@
 import marimo
 
-__generated_with = "0.10.19"
+__generated_with = "0.13.15"
 app = marimo.App(width="medium", app_title="NERACOOS Climatology")
 
-
-@app.cell
-def _():
-    import base64
+with app.setup:
     from datetime import datetime, timedelta
-    from io import BytesIO
 
-    return BytesIO, base64, datetime, timedelta
-
-
-@app.cell
-def _():
     import httpx
     import erddapy
     import pandas as pd
-    from PIL import Image
-    import xarray as xr
     import marimo as mo
     import altair as alt
-    import numpy as np
 
-    return Image, alt, erddapy, httpx, mo, np, pd, xr
+    import common
 
 
 @app.cell
-def _(pd):
-    pd.set_option("display.precision", 2)
+def _():
+    common.set_defaults()
+    common.sidebar_menu()
     return
 
 
 @app.cell
-def _(httpx):
+def _():
+    mo.md(
+        r"""
+        # Climatology (beta)
+
+        To view different plots, select buoy, data type and the averaging time period from the selections below.""",
+    )
+    return
+
+
+@app.cell
+def _():
     platform_res = httpx.get(
         "https://buoybarn.neracoos.org/api/platforms/?visibility=climatology",
     )
@@ -50,17 +50,17 @@ def _(platform_res):
         else:
             platforms[feature["id"]] = feature
     platforms = dict(sorted(platforms.items()))
-    return feature, platforms
+    return (platforms,)
 
 
 @app.cell
-def _(mo):
+def _():
     query_params = mo.query_params()
     return (query_params,)
 
 
 @app.cell
-def _(mo, platforms, query_params):
+def _(platforms, query_params):
     if query_params["platform"] and query_params["platform"] in platforms:
         platform_default = query_params["platform"]
     else:
@@ -72,30 +72,12 @@ def _(mo, platforms, query_params):
         value=platform_default,
         on_change=lambda value: query_params.set("platform", value["id"]),
     )
-    platform_dropdown
-    return platform_default, platform_dropdown
+    return (platform_dropdown,)
 
 
 @app.cell
-def _(mo, platform_dropdown):
+def _(platform_dropdown):
     platform = platform_dropdown.value
-    if platform is None:
-        platform_callout = mo.callout(
-            "Please select a platform to view climatologies for",
-            kind="warn",
-        )
-        mo.output.append(platform_callout)
-    return platform, platform_callout
-
-
-@app.cell
-def _(mo, platform):
-    mo.stop(platform is None)
-    return
-
-
-@app.cell
-def _(mo, platform):
     timeseries = {}
     try:
         for r in platform["properties"]["readings"]:
@@ -107,13 +89,14 @@ def _(mo, platform):
             r["app_name"] = name
             timeseries[name] = r
     except TypeError:
-        mo.stop(True)
+        # mo.stop(True)
+        pass
     timeseries = dict(sorted(timeseries.items()))
-    return name, r, timeseries
+    return platform, timeseries
 
 
 @app.cell
-def _(mo, query_params, timeseries):
+def _(query_params, timeseries):
     if query_params["ts"] and query_params["ts"] in timeseries:
         timeseries_default = query_params["ts"]
     else:
@@ -125,30 +108,46 @@ def _(mo, query_params, timeseries):
         value=timeseries_default,
         on_change=lambda value: query_params.set("ts", value["app_name"]),
     )
-    timeseries_dropdown
-    return timeseries_default, timeseries_dropdown
+    return (timeseries_dropdown,)
 
 
 @app.cell
-def _(mo, timeseries_dropdown):
-    ts = timeseries_dropdown.value
-    if ts is None:
-        ts_callout = mo.callout(
-            "Please select a data type to compute climatologies for",
-            kind="warn",
-        )
-        mo.output.append(ts_callout)
-    return ts, ts_callout
-
-
-@app.cell
-def _(mo, ts):
-    mo.stop(ts is None)
+def _(platform_dropdown, timeseries_dropdown):
+    mo.hstack([platform_dropdown, timeseries_dropdown])
     return
 
 
 @app.cell
-def _(erddapy, mo, ts):
+def _(platform):
+    if platform is None:
+        mo.stop(
+            True,
+            common.admonition(
+                "",
+                title="Please select a platform to view climatologies for",
+                kind="warning",
+            ),
+        )
+    return
+
+
+@app.cell
+def _(timeseries_dropdown):
+    ts = timeseries_dropdown.value
+    if ts is None:
+        mo.stop(
+            True,
+            common.admonition(
+                "",
+                title="Please select a data type to compute climatologies for",
+                kind="warning",
+            ),
+        )
+    return (ts,)
+
+
+@app.cell
+def _(ts):
     with mo.status.spinner(title="Loading data from ERDDAP"):
         try:
             e = erddapy.ERDDAP(ts["server"], protocol="tabledap")
@@ -173,7 +172,7 @@ def _(df_all):
 
 
 @app.cell
-def _(df_all, mo, query_params):
+def _(df_all, query_params):
     years = [str(y) for y in df_all.index.year.unique()]
 
     if query_params["year"] and query_params["year"] in years:
@@ -188,17 +187,17 @@ def _(df_all, mo, query_params):
         on_change=lambda value: query_params.set("year", value),
     )
     year_dropdown
-    return year_dropdown, years, years_default
+    return year_dropdown, years
 
 
 @app.cell
-def _(datetime, year_dropdown):
+def _(year_dropdown):
     year = datetime(int(year_dropdown.value), 1, 1)
     return (year,)
 
 
 @app.cell
-def _(mo, query_params, years):
+def _(query_params, years):
     if query_params["clim_start"] and query_params["clim_start"] in years:
         start_year_default = query_params["clim_start"]
     else:
@@ -211,11 +210,11 @@ def _(mo, query_params, years):
         on_change=lambda value: query_params.set("clim_start", value),
     )
     # start_year_dropdown
-    return start_year_default, start_year_dropdown
+    return (start_year_dropdown,)
 
 
 @app.cell
-def _(mo, query_params, start_year_dropdown, years):
+def _(query_params, start_year_dropdown, years):
     years_greater_than_start = [
         y for y in years if int(start_year_dropdown.value) < int(y)
     ]
@@ -238,11 +237,11 @@ def _(mo, query_params, start_year_dropdown, years):
         on_change=lambda value: query_params.set("clim_end", value),
     )
     # end_year_dropdown
-    return end_year_default, end_year_dropdown, years_greater_than_start
+    return (end_year_dropdown,)
 
 
 @app.cell
-def _(mo, query_params):
+def _(query_params):
     DAILY = "Daily"
     MONTHLY = "Monthly"
     average_period_dropdown = mo.ui.dropdown(
@@ -251,17 +250,17 @@ def _(mo, query_params):
         value=query_params["avg_period"] or DAILY,
         on_change=lambda value: query_params.set("avg_period", value),
     )
-    return DAILY, MONTHLY, average_period_dropdown
+    return DAILY, average_period_dropdown
 
 
 @app.cell
-def _(average_period_dropdown, end_year_dropdown, mo, start_year_dropdown):
+def _(average_period_dropdown, end_year_dropdown, start_year_dropdown):
     mo.hstack([start_year_dropdown, end_year_dropdown, average_period_dropdown])
     return
 
 
 @app.cell
-def _(DAILY, alt, average_period_dropdown, column, df_no_index, mo, pd):
+def _(DAILY, average_period_dropdown, column, df_no_index):
     if average_period_dropdown.value == DAILY:
         means = (
             df_no_index[column]
@@ -345,9 +344,7 @@ def _(
     average_period_dropdown,
     end_year_dropdown,
     means_filtered,
-    pd,
     start_year_dropdown,
-    timedelta,
     year,
 ):
     if average_period_dropdown.value == DAILY:
@@ -396,23 +393,11 @@ def _(
             "max": max_range_name,
         },
     )
-    return (
-        clim_df,
-        clim_group_by,
-        max_range_name,
-        mean_range_name,
-        min_range_name,
-    )
+    return clim_df, max_range_name, mean_range_name, min_range_name
 
 
 @app.cell
-def _(
-    alt,
-    average_period_dropdown,
-    clim_df,
-    max_range_name,
-    min_range_name,
-):
+def _(average_period_dropdown, clim_df, max_range_name, min_range_name):
     area = (
         alt.Chart(clim_df)
         .mark_area(color="yellow", opacity=0.5)
@@ -428,7 +413,7 @@ def _(
 
 
 @app.cell
-def _(alt, average_period_dropdown, clim_df, mean_range_name):
+def _(average_period_dropdown, clim_df, mean_range_name):
     mean = (
         alt.Chart(clim_df)
         .mark_line()
@@ -443,15 +428,7 @@ def _(alt, average_period_dropdown, clim_df, mean_range_name):
 
 
 @app.cell
-def _(
-    average_period_dropdown,
-    column,
-    df_no_index,
-    pd,
-    timedelta,
-    year,
-    year_dropdown,
-):
+def _(average_period_dropdown, column, df_no_index, year, year_dropdown):
     df_year = df_no_index[
         (f"{year_dropdown.value}-01-01T00:00" < df_no_index["Date"])
         & (df_no_index["Date"] < f"{year_dropdown.value}-12-31T23:59:59")
@@ -474,11 +451,11 @@ def _(
             df_year["Date"].apply(lambda x: f"{year.year}-{x}"),
         )
         df_year = df_year.rename({"Date": "Month"}, axis=1)
-    return df_year, year_group_by
+    return (df_year,)
 
 
 @app.cell
-def _(alt, average_period_dropdown, df_year, ts):
+def _(average_period_dropdown, df_year, ts):
     _y_title = f"{ts['data_type']['long_name']} ({ts['data_type']['units']})"
 
     line = (
@@ -496,81 +473,34 @@ def _(alt, average_period_dropdown, df_year, ts):
 
 @app.cell
 def _(
-    BytesIO,
-    Image,
-    alt,
     average_period_dropdown,
-    base64,
     clim_df,
-    df_year,
     end_year_dropdown,
-    max_range_name,
-    np,
-    pd,
     platform,
     start_year_dropdown,
     ts,
     year_dropdown,
 ):
-    _pil_image = Image.open("./public/neracoos.png")
-    _output = BytesIO()
-    _pil_image.save(_output, format="PNG")
-    _base64_images = [
-        "data:image/png;base64," + base64.b64encode(_output.getvalue()).decode(),
-    ]
-    _data_max = np.ceil(
-        max([df_year["mean"].max(), clim_df[max_range_name].max()]),
+    logo = common.neracoos_logo(
+        clim_df["Date"].max(),
+        f"{ts['app_name']} at {platform['id']} for {start_year_dropdown.value} thru {max([end_year_dropdown.value, year_dropdown.value])}",
+        time_col="Date" if average_period_dropdown.value == "Daily" else "Month",
     )
-    _image_df = pd.DataFrame(
-        {
-            "Date" if average_period_dropdown.value == "Daily" else "Month": clim_df[
-                "Date"
-            ].max(),
-            "y": _data_max,
-            "image": _base64_images,
-        },
-    )
-
-    image = (
-        alt.Chart(
-            _image_df,
-            title=alt.Title(
-                f"{ts['app_name']} at {platform['id']} for {start_year_dropdown.value} thru {max([end_year_dropdown.value, year_dropdown.value])}",
-                baseline="bottom",
-                # align="right",
-                anchor="start",
-                dx=40,
-                offset=-46,
-            ),
-        )
-        .mark_image(
-            width=219,
-            height=46,
-            align="right",
-            baseline="bottom",
-            clip=False,
-        )
-        .encode(
-            x="Date" if average_period_dropdown.value == "Daily" else "Month",
-            y="y",
-            url="image",
-        )
-    )
-    return (image,)
+    return (logo,)
 
 
 @app.cell
-def _(area, image, line, mean, mo, ts):
+def _(area, line, logo, mean, ts):
     if "direction" in ts["data_type"]["standard_name"].lower():
-        combined_chart = mo.ui.altair_chart(image + mean + line)
+        combined_chart = mo.ui.altair_chart(logo + mean + line)
     else:
-        combined_chart = mo.ui.altair_chart(image + area + mean + line)
+        combined_chart = mo.ui.altair_chart(logo + area + mean + line)
     combined_chart
-    return (combined_chart,)
+    return
 
 
 @app.cell
-def _(e, end_year_dropdown, mo, platform, start_year_dropdown):
+def _(e, end_year_dropdown, platform, start_year_dropdown):
     mo.hstack(
         [
             mo.md(
@@ -592,8 +522,6 @@ def _(
     clim_df,
     df_year,
     end_year_dropdown,
-    mo,
-    pd,
     start_year_dropdown,
     year_dropdown,
 ):
@@ -630,7 +558,7 @@ def _(
     df_combined = df_combined.round(2)
 
     mo.accordion({"Show data": df_combined})
-    return (df_combined,)
+    return
 
 
 if __name__ == "__main__":
