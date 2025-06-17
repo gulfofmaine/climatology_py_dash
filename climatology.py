@@ -25,7 +25,10 @@ def _():
 @app.cell
 def _():
     mo.md(
-        r"""To view different plots, select buoy, data type and the averaging time period from the selections below.""",
+        r"""
+        # Climatology (beta)
+
+        To view different plots, select buoy, data type and the averaging time period from the selections below.""",
     )
     return
 

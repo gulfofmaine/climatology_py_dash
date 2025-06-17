@@ -99,7 +99,7 @@ def _(button_style, column_style, mo):
         </div>
         <div style="{column_style}">
             <a href="/climatology/">
-                <h3>By Data Type</h3>
+                <h3>Climatology</h3>
             </a>
             <p>Compare recent conditions to historical norms at buoy locations.</p>
             <a href="/climatology/">

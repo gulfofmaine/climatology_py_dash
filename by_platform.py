@@ -24,7 +24,13 @@ def _():
 
 @app.cell
 def _():
-    mo.md("""Compare multiple types of data for a single buoy.""")
+    mo.md(
+        """
+    # Visualize and Compare by Buoy (beta)
+
+    Compare multiple types of data for a single buoy.
+    """,
+    )
     return
 
 
@@ -37,8 +43,7 @@ def _():
 @app.cell
 def _(platform_json):
     platforms = {
-        p["properties"]["station_name"] or p["id"]: p
-        for p in platform_json["features"]
+        p["properties"]["station_name"] or p["id"]: p for p in platform_json["features"]
     }
     return (platforms,)
 
@@ -46,7 +51,8 @@ def _(platform_json):
 @app.cell
 def _(platforms):
     platform_selector = mo.ui.dropdown(
-        dict(sorted(platforms.items())), label="Select platform"
+        dict(sorted(platforms.items())),
+        label="Select platform",
     )
     return (platform_selector,)
 
@@ -75,7 +81,8 @@ def _(platform_selector):
 @app.cell
 def _(platform_time_series):
     time_series_selector = mo.ui.multiselect(
-        dict(sorted(platform_time_series.items())), label="Select time series"
+        dict(sorted(platform_time_series.items())),
+        label="Select time series",
     )
     return (time_series_selector,)
 
@@ -116,7 +123,11 @@ def _(time_series_selector):
                 unit_ts.setdefault(_unit, []).append(_col_name)
             except httpx.HTTPError as e:
                 mo.output.append(
-                    common.admonition("", title=f"Unable to load data for {_col_name}", kind="error")
+                    common.admonition(
+                        "",
+                        title=f"Unable to load data for {_col_name}",
+                        kind="error",
+                    ),
                 )
                 print(f"Error loading {_col_name}: \n{e}")
     return loaded_ts, unit_ts
@@ -128,7 +139,11 @@ def _(loaded_ts):
         df = pd.concat(loaded_ts.values(), axis=1)
     except ValueError:
         mo.output.append(
-            common.admonition("", title="Please select a platform and timeseries", kind="attention")
+            common.admonition(
+                "",
+                title="Please select a platform and timeseries",
+                kind="attention",
+            ),
         )
     return (df,)
 
@@ -159,7 +174,6 @@ def _(date_range, df, unit_ts):
 
     MAX_ROWS = 10_000 / len(list(unit_ts.keys()))
 
-
     def time_grouper(df: pd.DataFrame) -> pd.DataFrame:
         filtered_df = df
 
@@ -170,9 +184,14 @@ def _(date_range, df, unit_ts):
             for time_period, name in common.TIME_GROUPS:
                 filtered_df = df.resample(time_period).mean()
                 if len(filtered_df) < MAX_ROWS:
-                    mo.output.append(common.admonition("", title=f"Resampled to {name} means for plotting", kind="attention"))
+                    mo.output.append(
+                        common.admonition(
+                            "",
+                            title=f"Resampled to {name} means for plotting",
+                            kind="attention",
+                        ),
+                    )
                     return filtered_df
-
 
     filtered_df = time_grouper(time_filtered_df)
     return (filtered_df,)
@@ -182,9 +201,7 @@ def _(date_range, df, unit_ts):
 def _(filtered_df, platform_selector, unit_ts):
     _row_dfs = []
     for _unit, _ts_keys in unit_ts.items():
-        _row_df = pd.melt(
-            filtered_df[_ts_keys].reset_index(), id_vars="time (UTC)"
-        )
+        _row_df = pd.melt(filtered_df[_ts_keys].reset_index(), id_vars="time (UTC)")
         _row_df = _row_df.rename(columns={"value": _unit})
         _row_dfs.append(_row_df)
 
@@ -200,7 +217,8 @@ def _(filtered_df, platform_selector, unit_ts):
         _row = _base.encode(x="time (UTC):T", y=f"{_unit}:Q", color="variable")
         if i == 0:
             _row = _row + common.neracoos_logo(
-                filtered_df.index.max(), platform_selector.value["id"]
+                filtered_df.index.max(),
+                platform_selector.value["id"],
             )
         stack &= _row
 
@@ -214,7 +232,7 @@ def _(df, filtered_df):
         {
             "Full dataframe and download": df,
             "Filtered dataframe and download": filtered_df,
-        }
+        },
     )
     return
 

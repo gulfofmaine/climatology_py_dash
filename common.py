@@ -64,6 +64,7 @@ def neracoos_logo(max_time, title: str, time_col: str = "time (UTC)"):
             {
                 time_col: max_time,
                 "image": _base64_images,
+                "tooltip": "NERACOOS Logo",
             },
         )
     except ValueError as e:
@@ -91,6 +92,7 @@ def neracoos_logo(max_time, title: str, time_col: str = "time (UTC)"):
             x=time_col,
             y=alt.value(0),
             url="image",
+            tooltip="tooltip",
         )
     )
     return logo

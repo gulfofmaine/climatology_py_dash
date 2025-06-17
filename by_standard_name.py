@@ -16,7 +16,13 @@ with app.setup:
 
 @app.cell
 def _():
-    mo.md(r"""Compare the same type of data for multiple buoys.""")
+    mo.md(
+        r"""
+    # Visualize and Compare by Data Type (beta)
+
+    Compare the same type of data for multiple buoys.
+    """,
+    )
     return
 
 
@@ -111,8 +117,10 @@ def _(selected_ts_keys):
     try:
         selected_ts_keys.value
     except AttributeError:
-    # if len(selected_ts_keys.value) == 0:
-        mo.output.append(common.admonition("Please select platforms to display", kind="attention"))
+        # if len(selected_ts_keys.value) == 0:
+        mo.output.append(
+            common.admonition("Please select platforms to display", kind="attention"),
+        )
     return
 
 
@@ -144,15 +152,17 @@ def _(platform_options, selected_ts_keys, standard_name_dropdown):
             _ts = platform_options[_ts_name]
             _df = load_ts(_ts)
             try:
-                del _df['Timeseries']
+                del _df["Timeseries"]
             except KeyError:  # weird caching
                 pass
             _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
             _wide_dfs.append(_df)
-        
+
         wide_df = pd.concat(_wide_dfs, axis=1)
         wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
-        wide_melted = wide_melted.rename(columns={"variable": "Timeseries", "value": standard_name_dropdown.value})
+        wide_melted = wide_melted.rename(
+            columns={"variable": "Timeseries", "value": standard_name_dropdown.value},
+        )
         wide_melted = wide_melted.set_index("time (UTC)")
     return wide_df, wide_melted
 
@@ -185,7 +195,13 @@ def time_grouper(df: pd.DataFrame) -> pd.DataFrame:
                 lambda x: x.groupby("Timeseries").mean(),
             )
             if len(filtered_df) < common.MAX_ROWS:
-                mo.output.append(common.admonition("", title=f"Resampled to {name} means for plotting", kind="attention"))
+                mo.output.append(
+                    common.admonition(
+                        "",
+                        title=f"Resampled to {name} means for plotting",
+                        kind="attention",
+                    ),
+                )
                 return filtered_df
 
 
@@ -207,7 +223,10 @@ def _(date_range, wide_melted):
 def _(filtered_df, standard_name_dropdown):
     alt.data_transformers.disable_max_rows()
 
-    _logo = common.neracoos_logo(filtered_df.index.max()[0], standard_name_dropdown.value)
+    _logo = common.neracoos_logo(
+        filtered_df.index.max()[0],
+        standard_name_dropdown.value,
+    )
 
     _chart = (
         alt.Chart(filtered_df.reset_index())
