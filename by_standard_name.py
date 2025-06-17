@@ -153,23 +153,33 @@ def load_ts(ts: dict, col_name: str) -> pd.DataFrame:
 def _(platform_options, selected_ts_keys, unit):
     _wide_dfs = []
 
-    with mo.status.spinner(title="Loading data from ERDDAP"):
-        for _ts_name in selected_ts_keys.value:
-            _ts = platform_options[_ts_name]
-            _df = load_ts(_ts, _ts_name)
-            try:
-                del _df["Timeseries"]
-            except KeyError:  # weird caching
-                pass
-            # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
-            _wide_dfs.append(_df)
+    try:
+        with mo.status.spinner(title="Loading data from ERDDAP"):
+            for _ts_name in selected_ts_keys.value:
+                _ts = platform_options[_ts_name]
+                _df = load_ts(_ts, _ts_name)
+                try:
+                    del _df["Timeseries"]
+                except KeyError:  # weird caching
+                    pass
+                # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
+                _wide_dfs.append(_df)
 
-        wide_df = pd.concat(_wide_dfs, axis=1)
-        wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
-        wide_melted = wide_melted.rename(
-            columns={"variable": "Timeseries", "value": unit},
+            wide_df = pd.concat(_wide_dfs, axis=1)
+            wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
+            wide_melted = wide_melted.rename(
+                columns={"variable": "Timeseries", "value": unit},
+            )
+            wide_melted = wide_melted.set_index("time (UTC)")
+    except ValueError:
+        mo.stop(
+            True,
+            common.admonition(
+                "",
+                title="Please select platforms to display",
+                kind="attention",
+            ),
         )
-        wide_melted = wide_melted.set_index("time (UTC)")
     return wide_df, wide_melted
 
 
