@@ -85,7 +85,7 @@ def _(platform_standards, query_params, standards):
 
     standard_name_dropdown = mo.ui.dropdown(
         options=_dropdown_standards,
-        label="Standard Name",
+        label="Data Type",
         value=_standard_name_default,
         on_change=lambda value: query_params.set("standard_name", value),
     )
@@ -113,30 +113,30 @@ def _(selected_ts_keys, standard_name_dropdown):
 
 
 @app.cell
+def _(standard_name_dropdown, standards):
+    try:
+        unit = standards[standard_name_dropdown.value]["units"]
+    except KeyError:
+        mo.stop(
+            True,
+            common.admonition(
+                "",
+                title="Please select a data type to display",
+                kind="attention",
+            ),
+        )
+    return (unit,)
+
+
+@app.cell
 def _(selected_ts_keys):
     try:
         selected_ts_keys.value
     except AttributeError:
-        # if len(selected_ts_keys.value) == 0:
-        mo.output.append(
+        mo.stop(
             common.admonition("Please select platforms to display", kind="attention"),
         )
     return
-
-
-@app.cell
-def _(selected_ts_keys):
-    try:
-        selected_ts_keys.value
-    except AttributeError:
-        mo.stop(True)
-    return
-
-
-@app.cell
-def _(standard_name_dropdown, standards):
-    unit = standards[standard_name_dropdown.value]["units"]
-    return (unit,)
 
 
 @app.function
