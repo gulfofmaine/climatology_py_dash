@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.15"
+__generated_with = "0.14.0"
 app = marimo.App(width="medium", app_title="NERACOOS Climatology")
 
 with app.setup:
@@ -61,24 +61,28 @@ def _():
 
 @app.cell
 def _(platforms, query_params):
-    if query_params["platform"] and query_params["platform"] in platforms:
-        platform_default = query_params["platform"]
-    else:
-        platform_default = None
-
     platform_dropdown = mo.ui.dropdown(
-        options=platforms,
+        options=platforms.keys(),
         label="Platform",
-        value=platform_default,
-        on_change=lambda value: query_params.set("platform", value["id"]),
+        value=query_params.get("platform", None),
+        on_change=lambda value: query_params.set("platform", value),
     )
     return (platform_dropdown,)
 
 
 @app.cell
-def _(platform_dropdown):
-    platform = platform_dropdown.value
+def _(platform_dropdown, platforms):
+    try:
+        platform = platforms[platform_dropdown.value]
+    except KeyError:
+        platform = None
+    return (platform,)
+
+
+@app.cell
+def _(platform):
     timeseries = {}
+
     try:
         for r in platform["properties"]["readings"]:
             if r["depth"]:
@@ -92,7 +96,7 @@ def _(platform_dropdown):
         # mo.stop(True)
         pass
     timeseries = dict(sorted(timeseries.items()))
-    return platform, timeseries
+    return (timeseries,)
 
 
 @app.cell
