@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.17
-FROM ghcr.io/prefix-dev/pixi:0.52.0-noble@sha256:48b6892ecfd5378beb78a4b234ea46343bf14ec4a790f6f2c41f5d5b9023741b
+FROM ghcr.io/prefix-dev/pixi:0.53.0-noble@sha256:c440c5a68d2237088a146a7c78f609b4ebb220cf912221136fb6297fad7dc211
 
 WORKDIR /app
 
