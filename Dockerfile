@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.18
+# syntax=docker/dockerfile:1.20
 FROM ghcr.io/prefix-dev/pixi:0.52.0-noble@sha256:48b6892ecfd5378beb78a4b234ea46343bf14ec4a790f6f2c41f5d5b9023741b
 
 WORKDIR /app
