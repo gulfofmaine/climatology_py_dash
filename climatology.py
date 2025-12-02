@@ -164,6 +164,15 @@ def _(ts):
             ).dropna()
         except TypeError:
             mo.stop(True)
+        except httpx.HTTPError as e:
+            mo.stop(
+                True,
+                common.admonition(
+                    "Error loading data from ERDDAP",
+                    title="Data Load Error",
+                    kind="error",
+                ),
+            )
     return df_all, e
 
 
