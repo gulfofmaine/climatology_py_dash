@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.15"
+__generated_with = "0.14.0"
 app = marimo.App(
     width="medium",
     app_title="NERACOOS Visualize and Compare - Data Type",
@@ -163,6 +163,8 @@ def _(platform_options, selected_ts_keys, unit):
                 except KeyError:  # weird caching
                     pass
                 # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
+                if not _df.index.is_unique:
+                    _df = _df.loc[~_df.index.duplicated(keep="first")]
                 _wide_dfs.append(_df)
 
             wide_df = pd.concat(_wide_dfs, axis=1)
