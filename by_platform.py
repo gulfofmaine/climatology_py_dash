@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.13.15"
+__generated_with = "0.14.0"
 app = marimo.App(
     width="medium",
     app_title="NERACOOS Visualize and Compare - By Buoy",
@@ -136,7 +136,12 @@ def _(time_series_selector):
 @app.cell
 def _(loaded_ts):
     try:
-        df = pd.concat(loaded_ts.values(), axis=1)
+        _dfs = []
+        for _df in loaded_ts.values():
+            if not _df.index.is_unique:
+                _df = _df.loc[~_df.index.duplicated(keep="first")]
+            _dfs.append(_df)
+        df = pd.concat(_dfs, axis=1)
     except ValueError:
         mo.stop(
             True,
