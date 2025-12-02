@@ -36,7 +36,7 @@ vegafusion-python-embed = ">=1.6.9,<2"
 vl-convert-python = ">=1.7.0,<2"
 pyarrow = ">=22,<23"
 fastapi = ">=0.123.4,<0.124"
-uvicorn = ">=0.34.3,<0.35"
+uvicorn = ">=0.38,<0.39"
 
 [tool.marimo.display]
 custom_css = [ "style.css" ]
