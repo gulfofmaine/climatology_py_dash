@@ -3,6 +3,8 @@ FROM ghcr.io/prefix-dev/pixi:0.59.0-noble@sha256:7a726d5e1f21c9f04fb5d9c850bfe5f
 
 WORKDIR /app
 
+RUN pixi global install git
+
 COPY --link pixi.lock pyproject.toml ./
 
 RUN --mount=type=cache,id=pixi_climatology,target=/root/.cache/rattler/cache \
