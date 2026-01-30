@@ -28,7 +28,7 @@ serve = "python app.py"
 [tool.pixi.dependencies]
 erddapy = ">=2.2.4,<3"
 xarray = ">=2025.4.0,<2026"
-marimo = ">=0.14,<0.15"
+marimo = ">=0.19,<0.20"
 altair = ">=6,<7"
 pillow = ">=12,<13"
 numpy = "<2.3.6"
