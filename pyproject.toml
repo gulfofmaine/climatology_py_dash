@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [tool.pixi.dependencies]
-erddapy = ">=2.2.4,<3"
+erddapy = ">=3.2.1,<4"
 xarray = ">=2025.4.0,<2026"
 marimo = ">=0.14,<0.15"
 altair = ">=6,<7"
