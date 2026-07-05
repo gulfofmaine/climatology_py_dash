@@ -7,10 +7,10 @@ app = marimo.App(
 )
 
 with app.setup:
-    import httpx
-    import pandas as pd
     import altair as alt
+    import httpx
     import marimo as mo
+    import pandas as pd
 
     import common
 
@@ -19,7 +19,6 @@ with app.setup:
 def _():
     common.set_defaults()
     common.sidebar_menu()
-    return
 
 
 @app.cell
@@ -31,7 +30,6 @@ def _():
     Compare multiple types of data for a single buoy.
     """,
     )
-    return
 
 
 @app.cell
@@ -90,7 +88,6 @@ def _(platform_time_series):
 @app.cell
 def _(platform_selector, time_series_selector):
     mo.hstack([platform_selector, time_series_selector])
-    return
 
 
 @app.function
@@ -186,18 +183,18 @@ def _(date_range, df, unit_ts):
         if len(filtered_df) < MAX_ROWS:
             mo.output.append(mo.callout("No filtering needed"))
             return df[0]
-        else:
-            for time_period, name in common.TIME_GROUPS:
-                filtered_df = df.resample(time_period).mean()
-                if len(filtered_df) < MAX_ROWS:
-                    mo.output.append(
-                        common.admonition(
-                            "",
-                            title=f"Resampled to {name} means for plotting",
-                            kind="attention",
-                        ),
-                    )
-                    return filtered_df
+        for time_period, name in common.TIME_GROUPS:
+            filtered_df = df.resample(time_period).mean()
+            if len(filtered_df) < MAX_ROWS:
+                mo.output.append(
+                    common.admonition(
+                        "",
+                        title=f"Resampled to {name} means for plotting",
+                        kind="attention",
+                    ),
+                )
+                return filtered_df
+        return filtered_df
 
     filtered_df = time_grouper(time_filtered_df)
     return (filtered_df,)
@@ -229,7 +226,6 @@ def _(filtered_df, platform_selector, unit_ts):
         stack &= _row
 
     mo.ui.altair_chart(stack)
-    return
 
 
 @app.cell(hide_code=True)
@@ -240,7 +236,6 @@ def _(df, filtered_df):
             "Filtered dataframe and download": filtered_df,
         },
     )
-    return
 
 
 if __name__ == "__main__":

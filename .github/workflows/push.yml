@@ -1,6 +1,11 @@
 name: "Push"
 
-on: [push]
+on:
+  push:
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: 3
 
 permissions: {}
 
@@ -117,6 +122,19 @@ jobs:
         with:
           name: playwright-test-results
           path: test-results/
+
+  pass:
+    name: Check all jobs passed
+    if: always()
+    needs: [build, e2e]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}
 
   push:
     name: Push Docker Image and update GitOps config

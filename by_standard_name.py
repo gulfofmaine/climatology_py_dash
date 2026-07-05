@@ -7,9 +7,9 @@ app = marimo.App(
 )
 
 with app.setup:
-    import pandas as pd
     import altair as alt
     import marimo as mo
+    import pandas as pd
 
     import common
 
@@ -23,14 +23,12 @@ def _():
     Compare the same type of data for multiple buoys.
     """,
     )
-    return
 
 
 @app.cell
 def _():
     common.set_defaults()
     common.sidebar_menu()
-    return
 
 
 @app.cell
@@ -109,7 +107,6 @@ def _(platform_standards, standard_name_dropdown):
 @app.cell
 def _(selected_ts_keys, standard_name_dropdown):
     mo.vstack([i for i in [standard_name_dropdown, selected_ts_keys] if i is not None])
-    return
 
 
 @app.cell
@@ -136,7 +133,6 @@ def _(selected_ts_keys):
         mo.stop(
             common.admonition("Please select platforms to display", kind="attention"),
         )
-    return
 
 
 @app.function
@@ -151,6 +147,8 @@ def load_ts(ts: dict, col_name: str) -> pd.DataFrame:
 
 @app.cell
 def _(platform_options, selected_ts_keys, unit):
+    import contextlib
+
     _wide_dfs = []
 
     try:
@@ -158,10 +156,8 @@ def _(platform_options, selected_ts_keys, unit):
             for _ts_name in selected_ts_keys.value:
                 _ts = platform_options[_ts_name]
                 _df = load_ts(_ts, _ts_name)
-                try:
+                with contextlib.suppress(KeyError):  # weird caching
                     del _df["Timeseries"]
-                except KeyError:  # weird caching
-                    pass
                 # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
                 if not _df.index.is_unique:
                     _df = _df.loc[~_df.index.duplicated(keep="first")]
@@ -206,21 +202,21 @@ def time_grouper(df: pd.DataFrame) -> pd.DataFrame:
     if len(filtered_df) < common.MAX_ROWS:
         print("No aggregation needed")
         return df
-    else:
-        for time_period, name in common.TIME_GROUPS:
-            print(f"Trying to group by {time_period}")
-            filtered_df = df.groupby(pd.Grouper(freq=time_period)).apply(
-                lambda x: x.groupby("Timeseries").mean(),
+    for time_period, name in common.TIME_GROUPS:
+        print(f"Trying to group by {time_period}")
+        filtered_df = df.groupby(pd.Grouper(freq=time_period)).apply(
+            lambda x: x.groupby("Timeseries").mean(),
+        )
+        if len(filtered_df) < common.MAX_ROWS:
+            mo.output.append(
+                common.admonition(
+                    "",
+                    title=f"Resampled to {name} means for plotting",
+                    kind="attention",
+                ),
             )
-            if len(filtered_df) < common.MAX_ROWS:
-                mo.output.append(
-                    common.admonition(
-                        "",
-                        title=f"Resampled to {name} means for plotting",
-                        kind="attention",
-                    ),
-                )
-                return filtered_df
+            return filtered_df
+    return filtered_df
 
 
 @app.cell
@@ -253,7 +249,6 @@ def _(filtered_df, standard_name_dropdown, standards, unit):
     )
 
     mo.ui.altair_chart(_chart + _logo)
-    return
 
 
 @app.cell
@@ -264,7 +259,6 @@ def _(filtered_df, wide_df):
             "Filtered dataframe and download": filtered_df,
         },
     )
-    return
 
 
 if __name__ == "__main__":

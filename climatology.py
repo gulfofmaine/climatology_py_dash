@@ -6,11 +6,11 @@ app = marimo.App(width="medium", app_title="NERACOOS Climatology")
 with app.setup:
     from datetime import datetime, timedelta
 
-    import httpx
-    import erddapy
-    import pandas as pd
-    import marimo as mo
     import altair as alt
+    import erddapy
+    import httpx
+    import marimo as mo
+    import pandas as pd
 
     import common
 
@@ -19,7 +19,6 @@ with app.setup:
 def _():
     common.set_defaults()
     common.sidebar_menu()
-    return
 
 
 @app.cell
@@ -30,7 +29,6 @@ def _():
 
         To view different plots, select buoy, data type and the averaging time period from the selections below.""",
     )
-    return
 
 
 @app.cell
@@ -118,7 +116,6 @@ def _(query_params, timeseries):
 @app.cell
 def _(platform_dropdown, timeseries_dropdown):
     mo.hstack([platform_dropdown, timeseries_dropdown])
-    return
 
 
 @app.cell
@@ -132,7 +129,6 @@ def _(platform):
                 kind="warning",
             ),
         )
-    return
 
 
 @app.cell
@@ -269,7 +265,6 @@ def _(query_params):
 @app.cell
 def _(average_period_dropdown, end_year_dropdown, start_year_dropdown):
     mo.hstack([start_year_dropdown, end_year_dropdown, average_period_dropdown])
-    return
 
 
 @app.cell
@@ -509,7 +504,6 @@ def _(area, line, logo, mean, ts):
     else:
         combined_chart = mo.ui.altair_chart(logo + area + mean + line)
     combined_chart
-    return
 
 
 @app.cell
@@ -525,7 +519,6 @@ def _(e, end_year_dropdown, platform, start_year_dropdown):
             ),
         ],
     )
-    return
 
 
 @app.cell
@@ -539,8 +532,7 @@ def _(
     year_dropdown,
 ):
     _range = f"({start_year_dropdown.value} - {end_year_dropdown.value})"
-    df_combined = pd.merge(
-        clim_df,
+    df_combined = clim_df.merge(
         df_year.rename(
             {
                 "mean": f"{'Daily' if average_period_dropdown.value == DAILY else 'Monthly'} means for {year_dropdown.value}",
@@ -554,24 +546,23 @@ def _(
     if average_period_dropdown.value == DAILY:
         df_combined["Date"] = df_combined["Date"].dt.date
 
-        _cols = (
-            [df_combined.columns.to_list()[0]]
-            + df_combined.columns.to_list()[-1:]
-            + df_combined.columns.to_list()[1:-1]
-        )
+        _cols = [
+            df_combined.columns.to_list()[0],
+            *df_combined.columns.to_list()[-1:],
+            *df_combined.columns.to_list()[1:-1],
+        ]
         df_combined = df_combined[_cols]
     else:
-        _cols = (
-            [df_combined.columns.to_list()[0]]
-            + df_combined.columns.to_list()[-1:]
-            + df_combined.columns.to_list()[2:-1]
-        )
+        _cols = [
+            df_combined.columns.to_list()[0],
+            *df_combined.columns.to_list()[-1:],
+            *df_combined.columns.to_list()[2:-1],
+        ]
         df_combined = df_combined[_cols]
 
     df_combined = df_combined.round(2)
 
     mo.accordion({"Show data": df_combined})
-    return
 
 
 if __name__ == "__main__":
