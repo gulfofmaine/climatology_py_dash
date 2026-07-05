@@ -20,6 +20,12 @@ def test_air_temp(page: Page) -> None:
 
     expect(page.get_by_text("Resampled to daily means for")).to_be_visible()
 
+    chart = page.locator("canvas").first
+    expect(chart).to_be_visible(timeout=60000)
+    box = chart.bounding_box()
+    assert box is not None
+    assert box["width"] > 700
+
     page.get_by_role("group", name="Click to view actions").get_by_role("img").click()
     with page.expect_download() as download_info:
         page.get_by_role("link", name="Save as PNG").click()
@@ -27,4 +33,7 @@ def test_air_temp(page: Page) -> None:
     assert download.suggested_filename.endswith(".png")
 
     page.get_by_role("button", name="Full dataframe and download").click()
-    page.get_by_role("button", name="Download", exact=True).click()
+    page.get_by_role("button", name="Export").click()
+    with page.expect_download() as csv_download_info:
+        page.get_by_role("menuitem", name="CSV").first.click()
+    assert csv_download_info.value.suggested_filename.endswith(".csv")

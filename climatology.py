@@ -500,9 +500,10 @@ def _(
 @app.cell
 def _(area, line, logo, mean, ts):
     if "direction" in ts["data_type"]["standard_name"].lower():
-        combined_chart = mo.ui.altair_chart(logo + mean + line)
+        _layered = logo + mean + line
     else:
-        combined_chart = mo.ui.altair_chart(logo + area + mean + line)
+        _layered = logo + area + mean + line
+    combined_chart = mo.ui.altair_chart(_layered.properties(width="container"))
     combined_chart
 
 

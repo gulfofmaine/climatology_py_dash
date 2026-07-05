@@ -223,9 +223,13 @@ def _(filtered_df, platform_selector, unit_ts):
                 filtered_df.index.max(),
                 platform_selector.value["id"],
             )
-        stack &= _row
+        stack &= _row.properties(width="container")
 
-    mo.ui.altair_chart(stack)
+    mo.ui.altair_chart(
+        stack.properties(width="container"),
+        chart_selection=False,
+        legend_selection=False,
+    )
 
 
 @app.cell(hide_code=True)

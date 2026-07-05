@@ -247,6 +247,7 @@ def _(filtered_df, standard_name_dropdown, standards, unit):
         .mark_line()
         .encode(x="time (UTC)", y=unit, color="Timeseries")
     )
+    _chart = _chart.properties(width="container")
 
     mo.ui.altair_chart(_chart + _logo)
 

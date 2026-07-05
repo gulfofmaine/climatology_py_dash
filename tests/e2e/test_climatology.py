@@ -14,6 +14,14 @@ def test_western_maine_shelf_air(page: Page) -> None:
     expect(page).to_have_url(
         "/climatology/?platform=Western+Maine+Shelf&ts=Air+Temperature",
     )
+
+    expect(page.get_by_text("Duplicate signal name")).to_have_count(0)
+    chart = page.locator("canvas").first
+    expect(chart).to_be_visible(timeout=60000)
+    box = chart.bounding_box()
+    assert box is not None
+    assert box["width"] > 700
+
     page.get_by_role("group", name="Click to view actions").get_by_role("img").click()
     with page.expect_download() as download_info:
         page.get_by_role("link", name="Save as PNG").click()
