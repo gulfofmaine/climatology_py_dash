@@ -15,6 +15,9 @@ dependencies = [
   "tadc @ git+https://github.com/NOAA-CO-OPS/CO-OPS-Tidal-Analysis-Datum-Calculator.git@v2.2.0?rev_type=tag",
 ]
 
+[tool.pytest]
+addopts = [ "--verbose" ]
+
 [tool.pixi.workspace]
 channels = [ "conda-forge" ]
 platforms = [ "osx-arm64", "linux-64" ]
@@ -43,6 +46,25 @@ uvicorn = ">=0.38,<0.39"
 matplotlib-base = ">=3.10.8,<4"
 scipy = ">=1.15.2,<2"
 requests = ">=2.32.5,<3"
+
+[tool.pixi.feature.test.dependencies]
+pytest = ">=9"
+pytest-playwright = ">=0.7,<1"
+playwright = ">=1.49"
+
+[tool.pixi.feature.test.tasks]
+e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
+e2e-install = "playwright install chromium"
+e2e-docker = "E2E_BASE_URL=http://localhost:8080 pixi run e2e"
+e2e-browser = "pixi run e2e --headed"
+e2e-codegen = "playwright codegen"
+
+[tool.pixi.feature.test.tasks.e2e-trace]
+args = [ "trace_path" ]
+cmd = "playwright show-trace {{trace_path}}"
+
+[tool.pixi.environments]
+test = { features = [ "test" ], solve-group = "default" }
 
 [tool.marimo.display]
 custom_css = [ "style.css" ]

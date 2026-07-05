@@ -87,11 +87,11 @@ def _(button_style, column_style, mo):
             </a>
         </div>
         <div style="{column_style}">
-            <a href="/by_data_type/">
+            <a href="/by_standard_name/">
                 <h3>By Data Type</h3>
             </a>
             <p>Visualize, compare, and download the same data type across multiple buoys.</p>
-            <a href="/by_data_type/">
+            <a href="/by_standard_name/">
                 <button style="{button_style}">
                     View
                 </button>
