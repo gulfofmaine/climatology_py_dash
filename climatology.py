@@ -8,7 +8,7 @@ with app.setup:
 
     import altair as alt
     import erddapy
-    import httpx
+    import httpx2
     import marimo as mo
     import pandas as pd
 
@@ -33,7 +33,7 @@ def _():
 
 @app.cell
 def _():
-    platform_res = httpx.get(
+    platform_res = httpx2.get(
         "https://buoybarn.neracoos.org/api/platforms/?visibility=climatology",
     )
     return (platform_res,)
@@ -160,7 +160,7 @@ def _(ts):
             ).dropna()
         except TypeError:
             mo.stop(True)
-        except httpx.HTTPError as e:
+        except httpx2.HTTPError as e:
             mo.stop(
                 True,
                 common.admonition(
@@ -500,9 +500,10 @@ def _(
 @app.cell
 def _(area, line, logo, mean, ts):
     if "direction" in ts["data_type"]["standard_name"].lower():
-        combined_chart = mo.ui.altair_chart(logo + mean + line)
+        _layered = logo + mean + line
     else:
-        combined_chart = mo.ui.altair_chart(logo + area + mean + line)
+        _layered = logo + area + mean + line
+    combined_chart = mo.ui.altair_chart(_layered.properties(width="container"))
     combined_chart
 
 

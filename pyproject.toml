@@ -15,7 +15,7 @@ dependencies = [
 [tool.pixi.dependencies]
 erddapy = ">=3.2.1,<4"
 xarray = ">=2026.4,<2027"
-marimo = ">=0.14,<0.15"
+marimo = ">=0.23,<0.24"
 altair = ">=6,<7"
 pillow = ">=12,<13"
 numpy = "<2.5.1"
@@ -30,6 +30,8 @@ uvicorn = ">=0.49,<0.50"
 matplotlib-base = ">=3.10.8,<4"
 scipy = ">=1.15.2,<2"
 requests = ">=2.32.5,<3"
+pydantic = ">=2.12"
+httpx2 = ">=2.5.0,<3"
 
 [tool.pixi.environments]
 test = { features = [ "test" ], solve-group = "default" }
