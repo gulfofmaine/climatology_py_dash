@@ -1,10 +1,10 @@
 import base64
 from io import BytesIO
 
-from PIL import Image
 import altair as alt
-import pandas as pd
 import marimo as mo
+import pandas as pd
+from PIL import Image
 
 # Maximum number of rows that Altair will render
 MAX_ROWS = 10_000
@@ -32,7 +32,8 @@ def load_platform_json():
 
     platform_res = httpx.get("https://buoybarn.neracoos.org/api/platforms/")
     if platform_res.status_code != 200:
-        raise ValueError(f"Failed to load platforms: {platform_res.status_code}")
+        msg = f"Failed to load platforms: {platform_res.status_code}"
+        raise ValueError(msg)
     return platform_res.json()
 
 
@@ -44,9 +45,7 @@ def load_ts_from_erddap(ts: dict) -> pd.DataFrame:
     e.dataset_id = ts["dataset"]
     e.variables = ["time", ts["variable"]]
     e.constraints = ts["constraints"] or {}
-    df = e.to_pandas(index_col="time (UTC)", parse_dates=True)
-    df = df.dropna()
-    return df
+    return e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
 
 
 def neracoos_logo(max_time, title: str, time_col: str = "time (UTC)"):
@@ -68,9 +67,10 @@ def neracoos_logo(max_time, title: str, time_col: str = "time (UTC)"):
             },
         )
     except ValueError as e:
-        raise ValueError(f"Error creating dataframe from {max_time=}") from e
+        msg = f"Error creating dataframe from {max_time=}"
+        raise ValueError(msg) from e
 
-    logo = (
+    return (
         alt.Chart(
             _image_df,
             title=alt.Title(
@@ -95,7 +95,6 @@ def neracoos_logo(max_time, title: str, time_col: str = "time (UTC)"):
             tooltip="tooltip",
         )
     )
-    return logo
 
 
 def sidebar_menu():

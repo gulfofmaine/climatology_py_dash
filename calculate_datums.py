@@ -8,10 +8,10 @@ app = marimo.App(width="medium")
 def _():
     from collections import OrderedDict
 
-    import marimo as mo
     import erddapy
-    import tadc
+    import marimo as mo
     import pandas as pd
+    import tadc
 
     import common
 
@@ -29,14 +29,12 @@ def _(mo):
     TADC has some of it's own QC, so QARTOD may not be useful or needed.
     """,
     )
-    return
 
 
 @app.cell
 def _(common):
     common.set_defaults()
     common.sidebar_menu()
-    return
 
 
 @app.cell
@@ -75,7 +73,6 @@ def _(mo):
 @app.cell
 def _(dataset_dropdown, mo, use_qartod):
     mo.hstack([dataset_dropdown, use_qartod])
-    return
 
 
 @app.cell
@@ -148,7 +145,6 @@ def _(common, df_reset, latitude, longitude, mo, tadc):
 @app.cell
 def _(mo, out):
     mo.ui.table([{"datum": k, "NAVD88 meters": v} for k, v in out.datums.items()])
-    return
 
 
 @app.cell
@@ -165,7 +161,6 @@ def _(df, mo, out):
             "Source data": df,
         },
     )
-    return
 
 
 @app.cell

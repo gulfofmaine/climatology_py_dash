@@ -28,7 +28,7 @@ PAGES = [
 
 
 @pytest.mark.parametrize(
-    "route,heading",
+    ("route", "heading"),
     PAGES,
     ids=[route for route, _ in PAGES],
 )
@@ -64,7 +64,7 @@ def test_sidebar_navigates_to_by_platform(page: Page) -> None:
 def api_request_context(
     playwright: Playwright,
     base_url: str,
-) -> Generator[APIRequestContext, None, None]:
+) -> Generator[APIRequestContext]:
     """An APIRequestContext bound to the app's base URL.
 
     pytest-playwright does not ship one (and pytest's built-in ``request``

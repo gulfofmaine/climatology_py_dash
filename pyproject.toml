@@ -2,11 +2,9 @@
 name = "climatology-py-dash"
 version = "0.1.0"
 description = "Add a short description here"
+requires-python = ">=3.13"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
 ]
@@ -64,12 +62,63 @@ channels = [ "conda-forge" ]
 platforms = [ "linux-64", "osx-arm64" ]
 exclude-newer = "7d"
 
+[tool.ruff.lint]
+extend-select = [
+  "ARG", # flake8-unused-arguments
+  "B",   # flake8-bugbear
+  "C4",  # flake8-comprehensions
+  "EM",  # flake8-errmsg
+  "EXE", # flake8-executable
+  "G",   # flake8-logging-format
+  "I",   # isort
+  "ICN", # flake8-import-conventions
+  "NPY", # NumPy specific rules
+  "PD",  # pandas-vet
+  "PGH", # pygrep-hooks
+  "PIE", # flake8-pie
+  "PL",  # pylint
+  "PT",  # flake8-pytest-style
+  "PTH", # flake8-use-pathlib
+  "RET", # flake8-return
+  "RUF", # Ruff-specific
+  "SIM", # flake8-simplify
+  "UP",  # pyupgrade
+  "YTT", # flake8-2020
+]
+ignore = [
+  "B018",    # marimo: last expression in a cell renders output
+  "ISC001",  # conflicts with formatter
+  "PLC0415", # marimo: imports live inside cells
+  "PLR09",   # too many X
+  "PLR2004", # magic values
+]
+
+[tool.repo-review]
+ignore = [
+  "PY004", # docs folder
+  "PP002", # build-system table
+  "PP003", # wheel as build dep
+  "PP006", # dev dependency group
+  "GH200", # Using renovate rather than dependabot
+  "MY100", # MyPy
+  "PC111", # Blacken docs
+  "PC140", # Type checking
+  "PC901", # pre-commit update message
+  "PC902", # pre-comit auto-fix message
+  "PC903", # pre-commit schedule
+]
+
 [tool.pyproject-fmt]
 table_format = "long"
 sub_table_spacing = "\n"
 
 [tool.pytest]
-addopts = [ "--verbose" ]
+addopts = [ "--verbose", "-ra", "--strict-markers", "--strict-config" ]
+filterwarnings = [ "error" ]
+log_level = "INFO"
+minversion = "9"
+strict = true
+testpaths = [ "tests" ]
 
 [tool.marimo.display]
 custom_css = [ "style.css" ]

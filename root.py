@@ -20,7 +20,6 @@ def _():
 @app.cell
 def _(common):
     common.sidebar_menu()
-    return
 
 
 @app.cell
@@ -111,7 +110,6 @@ def _(button_style, column_style, mo):
     </div>
     """,
     )
-    return
 
 
 @app.cell
