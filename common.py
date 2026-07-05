@@ -101,7 +101,7 @@ def sidebar_menu():
     """Build a sidebar menu"""
     return mo.sidebar(
         [
-            mo.md("""
+            mo.Html("""
             <a href="https://neracoos.org">
     <img src="public/neracoos.png" />
     </a>
