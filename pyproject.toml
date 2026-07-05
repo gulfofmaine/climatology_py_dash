@@ -57,6 +57,11 @@ e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracin
 e2e-install = "playwright install chromium"
 e2e-docker = "E2E_BASE_URL=http://localhost:8080 pixi run e2e"
 e2e-browser = "pixi run e2e --headed"
+e2e-codegen = "playwright codegen"
+
+[tool.pixi.feature.test.tasks.e2e-trace]
+args = [ "trace_path" ]
+cmd = "playwright show-trace {{trace_path}}"
 
 [tool.pixi.environments]
 test = { features = [ "test" ], solve-group = "default" }
