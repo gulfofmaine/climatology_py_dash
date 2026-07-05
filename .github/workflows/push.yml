@@ -2,6 +2,8 @@ name: "Push"
 
 on: [push]
 
+permissions: {}
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -11,16 +13,20 @@ jobs:
     name: Build Docker Image
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3.12.0
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Cache Docker image
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/image.tar
           key: neracoos-climatology-image-${{ github.sha }}
@@ -28,14 +34,14 @@ jobs:
             neracoos-climatology-image-
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@v3.7.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         continue-on-error: true
         with:
           username: gmri
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker Image
-        uses: docker/build-push-action@v6.19.2
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
           push: false
@@ -49,13 +55,17 @@ jobs:
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    permissions:
+      contents: read
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Cache Docker image
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/image.tar
           key: neracoos-climatology-image-${{ github.sha }}
@@ -71,13 +81,13 @@ jobs:
           gmri/neracoos-climatology-py-dash:latest
 
       - name: Set up pixi
-        uses: prefix-dev/setup-pixi@v0.10.0
+        uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
         with:
           environments: test
           cache: true
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ hashFiles('pixi.lock') }}
@@ -103,7 +113,7 @@ jobs:
 
       - name: Upload test results
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-test-results
           path: test-results/
@@ -113,6 +123,8 @@ jobs:
     needs: [build, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     if: |
       github.repository == 'gulfofmaine/climatology_py_dash'
@@ -120,14 +132,16 @@ jobs:
 
     steps:
       - name: "Checkout"
-        uses: actions/checkout@v6
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
 
       - name: Get tag name
         id: tagName
         run: echo "tag=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
 
       - name: Cache Docker image
-        uses: actions/cache@v5
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: /tmp/image.tar
           key: neracoos-climatology-image-${{ github.sha }}
@@ -138,15 +152,17 @@ jobs:
           docker image ls -a
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@v3.7.0
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
         with:
           username: gmri
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker Image
+        env:
+          TAG: ${{ steps.tagName.outputs.tag }}
         run: |
-          docker tag gmri/neracoos-climatology-py-dash:latest gmri/neracoos-climatology-py-dash:${{ steps.tagName.outputs.tag }}
-          docker push gmri/neracoos-climatology-py-dash:${{ steps.tagName.outputs.tag }}
+          docker tag gmri/neracoos-climatology-py-dash:latest "gmri/neracoos-climatology-py-dash:$TAG"
+          docker push "gmri/neracoos-climatology-py-dash:$TAG"
 
       - name: Make GitOps directory
         run: mkdir gitops
@@ -161,9 +177,12 @@ jobs:
 
       - name: Update GitOps config repo
         working-directory: ./gitops/neracoos-aws-cd
+        env:
+          SHA: ${{ github.sha }}
+          TAG: ${{ steps.tagName.outputs.tag }}
         run: |
-          sed -i 's/?ref=.\+/?ref=${{ github.sha }}/' overlays/climatology_py_dash/kustomization.yaml
-          sed -i 's/newTag: .\+/newTag: "${{ steps.tagName.outputs.tag }}"/' overlays/climatology_py_dash/kustomization.yaml
+          sed -i "s/?ref=.\+/?ref=$SHA/" overlays/climatology_py_dash/kustomization.yaml
+          sed -i "s/newTag: .\+/newTag: \"$TAG\"/" overlays/climatology_py_dash/kustomization.yaml
           git config --global user.email 'neracoos-mariners-ci@gmri.org'
           git config --global user.name 'NERACOOS climatology_py_dash Dashboard CI'
-          git diff --exit-code && echo 'Already Deployed' || (git commit -am 'Upgrade climatology_py_dash Dashboard to ${{ steps.tagName.outputs.tag }}' && git push)
+          git diff --exit-code && echo 'Already Deployed' || (git commit -am "Upgrade climatology_py_dash Dashboard to $TAG" && git push)

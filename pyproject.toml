@@ -1,32 +1,18 @@
 [project]
 name = "climatology-py-dash"
 version = "0.1.0"
-
 description = "Add a short description here"
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
 ]
 dependencies = [
   "tadc @ git+https://github.com/NOAA-CO-OPS/CO-OPS-Tidal-Analysis-Datum-Calculator.git@v2.2.0?rev_type=tag",
 ]
-
-[tool.pytest]
-addopts = [ "--verbose" ]
-
-[tool.pixi.workspace]
-channels = [ "conda-forge" ]
-platforms = [ "osx-arm64", "linux-64" ]
-
-[tool.pixi.tasks]
-edit = "marimo edit"
-app = "marimo run climatology.py"
-# serve = "marimo run climatology.py --host 0.0.0.0 -p 8080 --base-url /climatology"
-serve = "python app.py"
 
 [tool.pixi.dependencies]
 erddapy = ">=2.2.4,<3"
@@ -47,10 +33,14 @@ matplotlib-base = ">=3.10.8,<4"
 scipy = ">=1.15.2,<2"
 requests = ">=2.32.5,<3"
 
+[tool.pixi.environments]
+test = { features = [ "test" ], solve-group = "default" }
+
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
 pytest-playwright = ">=0.7,<1"
-playwright = ">=1.49"
+# driver must match playwright-python; exclude-newer can split the pair
+playwright = ">=1.49,<1.61"
 
 [tool.pixi.feature.test.tasks]
 e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
@@ -63,8 +53,23 @@ e2e-codegen = "playwright codegen"
 args = [ "trace_path" ]
 cmd = "playwright show-trace {{trace_path}}"
 
-[tool.pixi.environments]
-test = { features = [ "test" ], solve-group = "default" }
+[tool.pixi.tasks]
+edit = "marimo edit"
+app = "marimo run climatology.py"
+# serve = "marimo run climatology.py --host 0.0.0.0 -p 8080 --base-url /climatology"
+serve = "python app.py"
+
+[tool.pixi.workspace]
+channels = [ "conda-forge" ]
+platforms = [ "linux-64", "osx-arm64" ]
+exclude-newer = "7d"
+
+[tool.pyproject-fmt]
+table_format = "long"
+sub_table_spacing = "\n"
+
+[tool.pytest]
+addopts = [ "--verbose" ]
 
 [tool.marimo.display]
 custom_css = [ "style.css" ]
