@@ -226,8 +226,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.12.2-pyha770c72_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025a-h78e105d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.6.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.38.0-pyh31011fe_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.38.0-h31011fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.49.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.49.0-he2a8d16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.21.0-pyhd8ed1ab_1.conda
       - pypi: git+https://github.com/NOAA-CO-OPS/CO-OPS-Tidal-Analysis-Datum-Calculator.git?tag=v2.2.0#ccafed1f6630695bb6f31d650bffe8eeab9bde3a
@@ -305,8 +305,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.12.2-pyha770c72_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025a-h78e105d_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.6.1-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.38.0-pyh31011fe_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.38.0-h31011fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.49.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.49.0-he2a8d16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.4.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-3.21.0-pyhd8ed1ab_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/arro3-core-0.8.1-py313h7d00576_0.conda
@@ -693,8 +693,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.38.0-pyh31011fe_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.38.0-h31011fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.49.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.49.0-he2a8d16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.12.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - pypi: git+https://github.com/NOAA-CO-OPS/CO-OPS-Tidal-Analysis-Datum-Calculator.git?tag=v2.2.0#ccafed1f6630695bb6f31d650bffe8eeab9bde3a
@@ -781,8 +781,8 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/noarch/typing_extensions-4.15.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/tzdata-2025c-hc9c84f9_1.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/urllib3-2.7.0-pyhd8ed1ab_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.38.0-pyh31011fe_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.38.0-h31011fe_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.49.0-pyhc90fa1f_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.49.0-he2a8d16_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.12.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/zipp-4.1.0-pyhcf101f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/_openmp_mutex-4.5-7_kmp_llvm.conda
@@ -7163,40 +7163,41 @@ packages:
   run_exports: {}
   size: 103560
   timestamp: 1778188657149
-- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.38.0-pyh31011fe_0.conda
-  sha256: 32e637726fd7cfeb74058e829b116e17514d001846fef56d8c763ec9ec5ac887
-  md5: d3aa78bc38d9478e9eed5f128ba35f41
+- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-0.49.0-pyhc90fa1f_0.conda
+  sha256: dc7477d200432bf07aab5218d305d88771c52fb8d449cf82869cdceae291f100
+  md5: 29a950390b7de7577d8c0ebc946055b9
   depends:
   - __unix
   - click >=7.0
   - h11 >=0.8
   - python >=3.10
   - typing_extensions >=4.0
+  - python
   license: BSD-3-Clause
   license_family: BSD
   purls:
-  - pkg:pypi/uvicorn?source=hash-mapping
+  - pkg:pypi/uvicorn?source=compressed-mapping
   run_exports: {}
-  size: 51717
-  timestamp: 1760803935306
-- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.38.0-h31011fe_0.conda
-  sha256: 3629a349257c0e129cbb84fd593759a31d68ac1219c0af8b8ed89b95b9574c9b
-  md5: 1ce870d7537376362672f5ff57109529
+  size: 56228
+  timestamp: 1780574319325
+- conda: https://conda.anaconda.org/conda-forge/noarch/uvicorn-standard-0.49.0-he2a8d16_0.conda
+  sha256: c5d67cef56cf9b3329d236ca4c05ab74495a9bbcae9e466793ae687dadc9aac4
+  md5: d289039d3680e8041e0e9b6960e9aa0d
   depends:
   - __unix
+  - uvicorn ==0.49.0 pyhc90fa1f_0
+  - websockets >=10.4
   - httptools >=0.6.3
+  - watchfiles >=0.20
   - python-dotenv >=0.13
   - pyyaml >=5.1
-  - uvicorn 0.38.0 pyh31011fe_0
-  - uvloop >=0.14.0,!=0.15.0,!=0.15.1
-  - watchfiles >=0.13
-  - websockets >=10.4
+  - uvloop >=0.15.1
   license: BSD-3-Clause
   license_family: BSD
   purls: []
   run_exports: {}
-  size: 7719
-  timestamp: 1760803936446
+  size: 4149
+  timestamp: 1780574319325
 - conda: https://conda.anaconda.org/conda-forge/noarch/xarray-2025.12.0-pyhcf101f3_0.conda
   sha256: b35f6848f229d65dc6e6d58a232099a5e293405a5e3e369b15110ed255cf9872
   md5: efdb3ef0ff549959650ef070ba2c52d2
