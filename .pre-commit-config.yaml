@@ -56,7 +56,7 @@ repos:
     rev: 1.8.3
     hooks:
       - id: bandit
-        exclude: .*\/tests\/.*
+        exclude: (^|/)tests/
 
   - repo: https://github.com/zricethezav/gitleaks/
     rev: v8.24.2

@@ -44,9 +44,73 @@ jobs:
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/image.tar
 
+  e2e:
+    name: End-to-end tests
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: "Checkout"
+        uses: actions/checkout@v6
+
+      - name: Cache Docker image
+        uses: actions/cache@v5
+        with:
+          path: /tmp/image.tar
+          key: neracoos-climatology-image-${{ github.sha }}
+
+      - name: Load Docker image
+        run: |
+          docker load --input /tmp/image.tar
+          docker image ls -a
+
+      - name: Run app container
+        run:
+          docker run -d --name climatology -p 8080:8080
+          gmri/neracoos-climatology-py-dash:latest
+
+      - name: Set up pixi
+        uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          environments: test
+          cache: true
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ hashFiles('pixi.lock') }}
+
+      - name: Install Playwright browsers
+        run: pixi run -e test playwright install --with-deps chromium
+
+      - name: Wait for app to be ready
+        run: |
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/health && exit 0
+            sleep 2
+          done
+          echo "App container did not become ready within 120 seconds" >&2
+          exit 1
+
+      - name: Run end-to-end tests
+        run: E2E_BASE_URL=http://localhost:8080 pixi run -e test e2e
+
+      - name: Show app container logs
+        if: failure()
+        run: docker logs climatology
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-test-results
+          path: test-results/
+
   push:
     name: Push Docker Image and update GitOps config
-    needs: build
+    needs: [build, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
