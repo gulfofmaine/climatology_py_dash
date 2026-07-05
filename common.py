@@ -28,9 +28,9 @@ def set_defaults():
 @mo.cache
 def load_platform_json():
     """Load the platform JSON from the NERACOOS API."""
-    import httpx
+    import httpx2
 
-    platform_res = httpx.get("https://buoybarn.neracoos.org/api/platforms/")
+    platform_res = httpx2.get("https://buoybarn.neracoos.org/api/platforms/")
     if platform_res.status_code != 200:
         msg = f"Failed to load platforms: {platform_res.status_code}"
         raise ValueError(msg)
