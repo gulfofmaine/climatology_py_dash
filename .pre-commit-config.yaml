@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
@@ -17,14 +17,14 @@ repos:
       - id: no-commit-to-branch
 
   - repo: https://github.com/pre-commit/pygrep-hooks
-    rev: "v1.10.0"
+    rev: "3a6eb0fadf60b3cccfd80bad9dbb6fae7e47b316" # frozen: v1.10.0
     hooks:
       - id: rst-backticks
       - id: rst-directive-colons
       - id: rst-inline-touching-normal
 
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: "v3.5.3"
+    rev: "4923370d55631aa5b66f612f52d67b2e0ca2a38c" # frozen: v3.9.1
     hooks:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
@@ -32,7 +32,7 @@ repos:
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.11.3
+    rev: c59bba8fb259db0fec2bbb77ad8ba51ea7341b56 # frozen: v0.15.20
     hooks:
       # Run the linter.
       - id: ruff
@@ -43,44 +43,56 @@ repos:
         types_or: [python, pyi, jupyter]
 
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.1
+    rev: 2ccb47ff45ad361a21071a7eedda4c37e6ae8c5a # frozen: v2.4.2
     hooks:
       - id: codespell
 
   - repo: https://github.com/asottile/add-trailing-comma
-    rev: v3.1.0
+    rev: 832dc73b1c9cea082ffcfeae01ae89dfc1ac5043 # frozen: v4.0.0
     hooks:
       - id: add-trailing-comma
 
   - repo: https://github.com/PyCQA/bandit
-    rev: 1.8.3
+    rev: 92ae8b82fb422a639f0ed8d99e96cea769594e08 # frozen: 1.9.4
     hooks:
       - id: bandit
         exclude: (^|/)tests/
 
   - repo: https://github.com/zricethezav/gitleaks/
-    rev: v8.24.2
+    rev: 83d9cd684c87d95d656c1458ef04895a7f1cbd8e # frozen: v8.30.1
     hooks:
       - id: gitleaks
 
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: 745eface02aef23e168a8afb6b5737818efbea95 # frozen: v0.11.0.1
     hooks:
       - id: shellcheck
 
   - repo: https://github.com/abravalheri/validate-pyproject
-    rev: "v0.24.1"
+    rev: "4b2e70d08cb2ccd26d1fba73588de41c7a5d50b7" # frozen: v0.25
     hooks:
       - id: validate-pyproject
+        # schema store doesn't yet allow pixi's relative exclude-newer ("7d")
+        args: ["--disable-plugins", "pixi"]
         additional_dependencies: ["validate-pyproject-schema-store[all]"]
 
   - repo: https://github.com/tox-dev/pyproject-fmt
-    rev: v2.5.1
+    rev: 0c8c15d8fe996493035be407c5cf4a288cf6bf8e # frozen: v2.25.1
     hooks:
       - id: pyproject-fmt
 
+  - repo: https://github.com/zizmorcore/zizmor-pre-commit
+    rev: e3eebf65325ccc992422292cb7a4baee967cf815 # frozen: v1.26.1
+    hooks:
+      - id: zizmor
+        files: "^\\.github"
+        args: [--persona=pedantic]
+
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: "0.32.1"
+    rev: "5030dca3047414c338091455ac41803200ec1f0f" # frozen: 0.37.3
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
+
+update:
+  cooldown_days: 7
