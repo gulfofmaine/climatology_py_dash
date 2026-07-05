@@ -39,7 +39,8 @@ test = { features = [ "test" ], solve-group = "default" }
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
 pytest-playwright = ">=0.7,<1"
-playwright = ">=1.49"
+# driver must match playwright-python; exclude-newer can split the pair
+playwright = ">=1.49,<1.61"
 
 [tool.pixi.feature.test.tasks]
 e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
