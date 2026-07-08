@@ -1,3 +1,4 @@
+from helpers import assert_chart_rendered
 from playwright.sync_api import Page, expect
 
 
@@ -20,11 +21,7 @@ def test_air_temp(page: Page) -> None:
 
     expect(page.get_by_text("Resampled to daily means for")).to_be_visible()
 
-    chart = page.locator("canvas").first
-    expect(chart).to_be_visible(timeout=60000)
-    box = chart.bounding_box()
-    assert box is not None
-    assert box["width"] > 700
+    assert_chart_rendered(page)
 
     page.get_by_role("group", name="Click to view actions").get_by_role("img").click()
     with page.expect_download() as download_info:
