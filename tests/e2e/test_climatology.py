@@ -2,6 +2,7 @@
 End-to-end tests for the Climatology page of the application.
 """
 
+from helpers import assert_chart_rendered
 from playwright.sync_api import Page, expect
 
 
@@ -15,12 +16,7 @@ def test_western_maine_shelf_air(page: Page) -> None:
         "/climatology/?platform=Western+Maine+Shelf&ts=Air+Temperature",
     )
 
-    expect(page.get_by_text("Duplicate signal name")).to_have_count(0)
-    chart = page.locator("canvas").first
-    expect(chart).to_be_visible(timeout=60000)
-    box = chart.bounding_box()
-    assert box is not None
-    assert box["width"] > 700
+    assert_chart_rendered(page)
 
     page.get_by_role("group", name="Click to view actions").get_by_role("img").click()
     with page.expect_download() as download_info:

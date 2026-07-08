@@ -1,3 +1,4 @@
+from helpers import assert_chart_rendered
 from playwright.sync_api import Page, expect
 
 
@@ -11,14 +12,7 @@ def test_western_maine_shelf(page: Page) -> None:
     page.get_by_role("option", name="Barometric Pressure").click()
     page.get_by_text("Resampled to weekly means for").click()
 
-    expect(page.get_by_text("Duplicate signal name")).to_have_count(0)
-    expect(page.locator("canvas").first).to_be_visible(timeout=60000)
-
-    chart = page.locator("canvas").first
-    expect(chart).to_be_visible(timeout=60000)
-    box = chart.bounding_box()
-    assert box is not None
-    assert box["width"] > 700
+    assert_chart_rendered(page)
 
     page.locator("summary").click()
 
