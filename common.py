@@ -24,6 +24,17 @@ def set_defaults():
     """Set common defaults for the app."""
     pd.set_option("display.precision", 2)
 
+    # Inline chart data in the vega spec rather than marimo's default of
+    # serving it as virtual files. Virtual files are flushed whenever a cell
+    # re-runs, which races the browser's in-flight fetches and leaves charts
+    # stuck retrying dead URLs (marimo-team/marimo#9127).
+    from marimo._plugins.ui._impl.charts.altair_transformer import (
+        register_transformers,
+    )
+
+    register_transformers()
+    alt.data_transformers.enable("marimo_inline_csv")
+
 
 @mo.cache
 def load_platform_json():
