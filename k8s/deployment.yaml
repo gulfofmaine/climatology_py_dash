@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: climatology
-          image: gmri/neracoos-climatology-py
+          image: gmri/neracoos-climatology-py-dash
           ports:
             - containerPort: 8080
               name: http
