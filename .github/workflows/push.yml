@@ -28,7 +28,7 @@ jobs:
           persist-credentials: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c # v4.2.0
 
       - name: Cache Docker image
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -39,14 +39,14 @@ jobs:
             neracoos-climatology-image-
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         continue-on-error: true
         with:
           username: gmri
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker Image
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7.3.0
         with:
           context: .
           push: false
@@ -137,7 +137,7 @@ jobs:
           jobs: ${{ toJSON(needs) }}
 
   push:
-    name: Push Docker Image and update GitOps config
+    name: Push Docker Image
     needs: [build, e2e]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -170,7 +170,7 @@ jobs:
           docker image ls -a
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
         with:
           username: gmri
           password: ${{ secrets.DOCKER_PASSWORD }}
@@ -182,25 +182,24 @@ jobs:
           docker tag gmri/neracoos-climatology-py-dash:latest "gmri/neracoos-climatology-py-dash:$TAG"
           docker push "gmri/neracoos-climatology-py-dash:$TAG"
 
-      - name: Make GitOps directory
-        run: mkdir gitops
-
-      - name: Clone GitOps config repo
-        working-directory: ./gitops
-        env:
-          GITOPS_TOKEN: ${{ secrets.GITOPS_TOKEN }}
-        run:
-          git clone
-          "https://$GITOPS_TOKEN@github.com/gulfofmaine/neracoos-aws-cd.git"
-
-      - name: Update GitOps config repo
-        working-directory: ./gitops/neracoos-aws-cd
-        env:
-          SHA: ${{ github.sha }}
-          TAG: ${{ steps.tagName.outputs.tag }}
-        run: |
-          sed -i "s/?ref=.\+/?ref=$SHA/" overlays/climatology_py_dash/kustomization.yaml
-          sed -i "s/newTag: .\+/newTag: \"$TAG\"/" overlays/climatology_py_dash/kustomization.yaml
-          git config --global user.email 'neracoos-mariners-ci@gmri.org'
-          git config --global user.name 'NERACOOS climatology_py_dash Dashboard CI'
-          git diff --exit-code && echo 'Already Deployed' || (git commit -am "Upgrade climatology_py_dash Dashboard to $TAG" && git push)
+  notify:
+    needs: [push]
+    if: |
+      github.repository == 'gulfofmaine/climatology_py_dash'
+      && github.ref == 'refs/heads/main'
+    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@095242502b9a4e852e574f3d0c4f7a2df608da35
+    permissions:
+      contents: read
+      pull-requests: read # needed to look up the merging PR for release notes
+    with:
+      image_name: climatology_py_dash
+      tag: ${{ needs.push.outputs.tag }}
+      digest: ${{ needs.push.outputs.image_digest }}
+      image_repository: gmri/neracoos-climatology-py-dash # optional
+      environment: notify # optional gate
+      # deploy_targets_path: .github/deploy_targets.yaml  # optional
+      # verbosity: 1                                       # optional, default
+    secrets:
+      dispatch_app_id: ${{ secrets.GULFOFMAINE_ODP_DISPATCH_APP_ID }}
+      dispatch_app_private_key:
+        ${{ secrets.GULFOFMAINE_ODP_DISPATCH_PRIVATE_KEY }}
