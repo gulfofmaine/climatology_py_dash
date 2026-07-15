@@ -144,6 +144,10 @@ jobs:
     permissions:
       contents: read
 
+    outputs:
+      tag: ${{ steps.tagName.outputs.tag }}
+      image_digest: ${{ steps.push.outputs.image_digest }}
+
     if: |
       github.repository == 'gulfofmaine/climatology_py_dash'
       && github.ref == 'refs/heads/main'
@@ -170,27 +174,29 @@ jobs:
           docker image ls -a
 
       - name: "Login to Docker Hub"
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           username: gmri
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Push Docker Image
+        id: push
         env:
           TAG: ${{ steps.tagName.outputs.tag }}
         run: |
           docker tag gmri/neracoos-climatology-py-dash:latest "gmri/neracoos-climatology-py-dash:$TAG"
           docker push "gmri/neracoos-climatology-py-dash:$TAG"
+          echo "image_digest=$(docker inspect --format='{{index .RepoDigests 0}}' gmri/neracoos-climatology-py-dash:$TAG)" >> $GITHUB_OUTPUT
 
   notify:
     needs: [push]
     if: |
       github.repository == 'gulfofmaine/climatology_py_dash'
       && github.ref == 'refs/heads/main'
-    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@095242502b9a4e852e574f3d0c4f7a2df608da35
+    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@f3c9e319a14eafa1404ded96335ceaaee2294d81
     permissions:
       contents: read
-      pull-requests: read # needed to look up the merging PR for release notes
+      pull-requests: read # ODP Releaser wants to figure out who made a PR
     with:
       image_name: climatology_py_dash
       tag: ${{ needs.push.outputs.tag }}
