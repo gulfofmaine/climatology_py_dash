@@ -193,7 +193,7 @@ jobs:
     if: |
       github.repository == 'gulfofmaine/climatology_py_dash'
       && github.ref == 'refs/heads/main'
-    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@f66bb4f1f961f3ee8429564ef74293c126eb885e
+    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@cbad29f07eeb4c04c7594ea7c20c5791b5030524
     permissions:
       contents: read
       pull-requests: read # ODP Releaser wants to figure out who made a PR
