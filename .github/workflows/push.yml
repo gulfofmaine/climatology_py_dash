@@ -186,25 +186,24 @@ jobs:
         run: |
           docker tag gmri/neracoos-climatology-py-dash:latest "gmri/neracoos-climatology-py-dash:$TAG"
           docker push "gmri/neracoos-climatology-py-dash:$TAG"
-          echo "image_digest=$(docker inspect --format='{{index .RepoDigests 0}}' gmri/neracoos-climatology-py-dash:$TAG)" >> $GITHUB_OUTPUT
+          echo "image_digest=$(docker inspect --format='{{index .RepoDigests 0}}' gmri/neracoos-climatology-py-dash:$TAG | cut -d@ -f2)" >> $GITHUB_OUTPUT
 
   notify:
     needs: [push]
     if: |
       github.repository == 'gulfofmaine/climatology_py_dash'
       && github.ref == 'refs/heads/main'
-    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@cbad29f07eeb4c04c7594ea7c20c5791b5030524
+    uses: gulfofmaine/odp-releaser/.github/workflows/notify.yml@52b11709c1fb73c142b24b62ce7a11ecb37f7da3
     permissions:
       contents: read
       pull-requests: read # ODP Releaser wants to figure out who made a PR
     with:
-      image_name: climatology_py_dash
+      image_name: gmri/neracoos-climatology-py-dash
       tag: ${{ needs.push.outputs.tag }}
       digest: ${{ needs.push.outputs.image_digest }}
-      image_repository: gmri/neracoos-climatology-py-dash # optional
       environment: notify # optional gate
       # deploy_targets_path: .github/deploy_targets.yaml  # optional
-      # verbosity: 1                                       # optional, default
+      verbosity: 3 # optional, default
     secrets:
       dispatch_app_id: ${{ secrets.GULFOFMAINE_ODP_DISPATCH_APP_ID }}
       dispatch_app_private_key:
