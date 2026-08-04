@@ -1,0 +1,44 @@
+{
+  "name": "NERACOOS Climatology",
+  "build": {
+    "dockerfile": "Dockerfile",
+    // linux/amd64 is forced because conda-forge does not publish recent
+    // linux-aarch64 builds of marimo; the repo's docker-compose.yml does
+    // the same for the production image.
+    "options": ["--platform=linux/amd64"]
+  },
+  "remoteUser": "vscode",
+  // Chromium (used by the Playwright e2e suite) crashes under Docker's
+  // default 64MB /dev/shm; give it real shared memory.
+  "runArgs": ["--shm-size=2gb"],
+  "features": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+  "mounts": [
+    // Shadows the host's macOS .pixi env (incompatible with the Linux
+    // container) with a named volume that persists across rebuilds.
+    "source=climatology-pixi-env,target=${containerWorkspaceFolder}/.pixi,type=volume",
+    "source=climatology-rattler-cache,target=/home/vscode/.cache/rattler,type=volume",
+    "source=climatology-playwright-cache,target=/home/vscode/.cache/ms-playwright,type=volume",
+    "source=claude-code-config,target=/home/vscode/.claude,type=volume"
+  ],
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "climatology app"
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "marimo-team.vscode-marimo",
+        "renan-r-santos.pixi-code",
+        "tamasfe.even-better-toml",
+        "hverlin.mise-vscode",
+        "ms-playwright.playwright"
+      ]
+    }
+  }
+}
