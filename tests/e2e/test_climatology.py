@@ -2,7 +2,7 @@
 End-to-end tests for the Climatology page of the application.
 """
 
-from helpers import assert_chart_rendered
+from helpers import assert_chart_rendered, download_chart_png
 from playwright.sync_api import Page, expect
 
 
@@ -18,8 +18,4 @@ def test_western_maine_shelf_air(page: Page) -> None:
 
     assert_chart_rendered(page)
 
-    page.get_by_role("group", name="Click to view actions").get_by_role("img").click()
-    with page.expect_download() as download_info:
-        page.get_by_role("link", name="Save as PNG").click()
-    download = download_info.value
-    assert download.suggested_filename.endswith(".png")
+    assert download_chart_png(page).suggested_filename.endswith(".png")
