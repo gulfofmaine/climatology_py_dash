@@ -121,7 +121,18 @@ jobs:
 
       - name: Show app container logs
         if: failure()
-        run: docker logs climatology
+        run: |
+          mkdir -p test-results
+          # The full log ships as an artifact; the inline copy drops the
+          # thousands of static-asset, service-worker and health 200s that
+          # otherwise bury the pytest traceback (~4100 lines -> ~120). Anything
+          # else -- 404s, redirects, warnings, tracebacks, websocket lifecycle
+          # -- is kept inline. grep exits 1 when it filters everything out, and
+          # this step runs under `bash -e`, hence the `|| true`.
+          docker logs climatology 2>&1 \
+            | tee test-results/container.log \
+            | grep -vE '"GET [^"]*/(assets/[^"]*|public-files-sw\.js(\?[^"]*)?|health)" 200 OK$' \
+            || true
 
       - name: Upload test results
         if: failure()
