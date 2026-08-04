@@ -155,7 +155,19 @@ def _(platform_options, selected_ts_keys, unit):
         with mo.status.spinner(title="Loading data from ERDDAP"):
             for _ts_name in selected_ts_keys.value:
                 _ts = platform_options[_ts_name]
-                _df = load_ts(_ts, _ts_name)
+                try:
+                    _df = load_ts(_ts, _ts_name)
+                except common.ErddapLoadError as error:
+                    # Keep going: one unavailable platform should not take the
+                    # whole comparison down with it.
+                    mo.output.append(
+                        common.admonition(
+                            str(error),
+                            title=f"Unable to load data for {_ts_name}",
+                            kind="error",
+                        ),
+                    )
+                    continue
                 with contextlib.suppress(KeyError):  # weird caching
                     del _df["Timeseries"]
                 # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})

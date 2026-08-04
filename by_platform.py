@@ -8,7 +8,6 @@ app = marimo.App(
 
 with app.setup:
     import altair as alt
-    import httpx
     import marimo as mo
     import pandas as pd
 
@@ -118,15 +117,14 @@ def _(time_series_selector):
                 _df = load_ts(_ts, col_name=_col_name)
                 loaded_ts[_key] = _df
                 unit_ts.setdefault(_unit, []).append(_col_name)
-            except httpx.HTTPError as e:
+            except common.ErddapLoadError as error:
                 mo.output.append(
                     common.admonition(
-                        "",
+                        str(error),
                         title=f"Unable to load data for {_col_name}",
                         kind="error",
                     ),
                 )
-                print(f"Error loading {_col_name}: \n{e}")
     return loaded_ts, unit_ts
 
 

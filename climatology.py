@@ -7,8 +7,6 @@ with app.setup:
     from datetime import datetime, timedelta
 
     import altair as alt
-    import erddapy
-    import httpx2
     import marimo as mo
     import pandas as pd
 
@@ -33,16 +31,14 @@ def _():
 
 @app.cell
 def _():
-    platform_res = httpx2.get(
-        "https://buoybarn.neracoos.org/api/platforms/?visibility=climatology",
-    )
-    return (platform_res,)
+    platform_json = common.load_platform_json(visibility="climatology")
+    return (platform_json,)
 
 
 @app.cell
-def _(platform_res):
+def _(platform_json):
     platforms = {}
-    for feature in platform_res.json()["features"]:
+    for feature in platform_json["features"]:
         if feature["properties"]["station_name"]:
             platforms[feature["properties"]["station_name"]] = feature
         else:
@@ -150,26 +146,17 @@ def _(timeseries_dropdown):
 def _(ts):
     with mo.status.spinner(title="Loading data from ERDDAP"):
         try:
-            e = erddapy.ERDDAP(ts["server"], protocol="tabledap")
-            e.dataset_id = ts["dataset"]
-            e.variables = ["time", ts["variable"]]
-            e.constraints = ts["constraints"] or {}
-            df_all = e.to_pandas(
-                index_col="time (UTC)",
-                parse_dates=True,
-            ).dropna()
-        except TypeError:
-            mo.stop(True)
-        except httpx2.HTTPError as e:
+            df_all = common.load_ts_from_erddap(ts)
+        except common.ErddapLoadError as error:
             mo.stop(
                 True,
                 common.admonition(
-                    "Error loading data from ERDDAP",
+                    str(error),
                     title="Data Load Error",
                     kind="error",
                 ),
             )
-    return df_all, e
+    return (df_all,)
 
 
 @app.cell
@@ -508,13 +495,13 @@ def _(area, line, logo, mean, ts):
 
 
 @app.cell
-def _(e, end_year_dropdown, platform, start_year_dropdown):
+def _(end_year_dropdown, platform, start_year_dropdown, ts):
     mo.hstack(
         [
             mo.md(
                 f"[Platform on Mariners Dashboard](https://mariners.neracoos.org/platform/{platform['id']})",
             ),
-            mo.md(f"[Dataset on ERDDAP]({e.get_download_url()})"),
+            mo.md(f"[Dataset on ERDDAP]({common.erddap_download_url(ts)})"),
             mo.md(
                 f"Climatology calculated from {start_year_dropdown.value} to {end_year_dropdown.value}",
             ),
