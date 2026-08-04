@@ -12,7 +12,7 @@ repos:
       - id: mixed-line-ending
       - id: name-tests-test
         args: ["--pytest-test-first"]
-        exclude: ^tests/e2e/helpers\.py$
+        exclude: ^tests/(e2e/helpers|record_cassettes)\.py$
       - id: requirements-txt-fixer
       - id: trailing-whitespace
       - id: no-commit-to-branch
@@ -30,6 +30,9 @@ repos:
       - id: prettier
         types_or: [yaml, markdown, html, css, scss, javascript, json]
         args: [--prose-wrap=always]
+        # VCR writes the cassettes; reformatting them just means they change
+        # again every time they are re-recorded.
+        exclude: ^tests/unit/cassettes/
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
