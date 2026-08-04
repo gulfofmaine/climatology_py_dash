@@ -39,8 +39,14 @@ test = { features = [ "test" ], solve-group = "default" }
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
 pytest-playwright = ">=0.7,<1"
-# driver must match playwright-python; exclude-newer can split the pair
+# conda-forge splits playwright into the node driver (playwright) and the Python
+# bindings (playwright-python), and they must move together. Constraining only
+# the driver let exclude-newer pull bindings 1.61 against driver 1.60 during
+# lock-file maintenance, which fails every browser assertion instantly with an
+# empty message. Keep both bounds identical, and see renovate.json for the
+# grouping that stops them being bumped apart.
 playwright = ">=1.49,<1.61"
+playwright-python = ">=1.49,<1.61"
 
 [tool.pixi.feature.test.tasks]
 e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
