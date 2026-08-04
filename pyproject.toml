@@ -45,8 +45,8 @@ pytest-playwright = ">=0.7,<1"
 # lock-file maintenance, which fails every browser assertion instantly with an
 # empty message. Keep both bounds identical, and see renovate.json for the
 # grouping that stops them being bumped apart.
-playwright = ">=1.49,<1.61"
-playwright-python = ">=1.49,<1.61"
+playwright = ">=1.62,<1.63"
+playwright-python = ">=1.61,<1.62"
 
 [tool.pixi.feature.test.tasks]
 e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
