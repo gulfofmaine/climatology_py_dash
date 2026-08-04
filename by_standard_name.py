@@ -131,24 +131,13 @@ def _(selected_ts_keys):
         selected_ts_keys.value
     except AttributeError:
         mo.stop(
+            True,
             common.admonition("Please select platforms to display", kind="attention"),
         )
 
 
-@app.function
-@mo.cache
-def load_ts(ts: dict, col_name: str) -> pd.DataFrame:
-    df = common.load_ts_from_erddap(ts)
-    columns = list(df.columns)
-    columns[0] = col_name
-    df.columns = columns
-    return df
-
-
 @app.cell
 def _(platform_options, selected_ts_keys, unit):
-    import contextlib
-
     _wide_dfs = []
 
     try:
@@ -156,7 +145,7 @@ def _(platform_options, selected_ts_keys, unit):
             for _ts_name in selected_ts_keys.value:
                 _ts = platform_options[_ts_name]
                 try:
-                    _df = load_ts(_ts, _ts_name)
+                    _df = common.load_ts(_ts, _ts_name)
                 except common.ErddapLoadError as error:
                     # Keep going: one unavailable platform should not take the
                     # whole comparison down with it.
@@ -168,9 +157,6 @@ def _(platform_options, selected_ts_keys, unit):
                         ),
                     )
                     continue
-                with contextlib.suppress(KeyError):  # weird caching
-                    del _df["Timeseries"]
-                # _df = _df.rename(columns={_ts["data_type"]["standard_name"]: _ts_name})
                 if not _df.index.is_unique:
                     _df = _df.loc[~_df.index.duplicated(keep="first")]
                 _wide_dfs.append(_df)
@@ -207,30 +193,6 @@ def _(wide_df):
     return (date_range,)
 
 
-@app.function
-def time_grouper(df: pd.DataFrame) -> pd.DataFrame:
-    filtered_df = df
-
-    if len(filtered_df) < common.MAX_ROWS:
-        print("No aggregation needed")
-        return df
-    for time_period, name in common.TIME_GROUPS:
-        print(f"Trying to group by {time_period}")
-        filtered_df = df.groupby(pd.Grouper(freq=time_period)).apply(
-            lambda x: x.groupby("Timeseries").mean(),
-        )
-        if len(filtered_df) < common.MAX_ROWS:
-            mo.output.append(
-                common.admonition(
-                    "",
-                    title=f"Resampled to {name} means for plotting",
-                    kind="attention",
-                ),
-            )
-            return filtered_df
-    return filtered_df
-
-
 @app.cell
 def _(date_range, wide_melted):
     try:
@@ -241,23 +203,33 @@ def _(date_range, wide_melted):
     except AttributeError:
         mo.stop(True)
 
-    filtered_df = time_grouper(time_filtered_df)
+    filtered_df, _resampled_to = common.resample_to_budget(
+        time_filtered_df,
+        by="Timeseries",
+    )
+
+    if _resampled_to:
+        mo.output.append(
+            common.admonition(
+                "",
+                title=f"Resampled to {_resampled_to} means for plotting",
+                kind="attention",
+            ),
+        )
     return (filtered_df,)
 
 
 @app.cell
 def _(filtered_df, standard_name_dropdown, standards, unit):
-    alt.data_transformers.disable_max_rows()
-
     _logo = common.neracoos_logo(
-        filtered_df.index.max()[0],
+        filtered_df.index.max(),
         standards[standard_name_dropdown.value]["long_name"],
     )
 
     _chart = (
         alt.Chart(filtered_df.reset_index())
         .mark_line()
-        .encode(x="time (UTC)", y=unit, color="Timeseries")
+        .encode(x="time (UTC):T", y=f"{unit}:Q", color="Timeseries")
     )
     _chart = _chart.properties(width="container")
 
