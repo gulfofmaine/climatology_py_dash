@@ -69,7 +69,7 @@ def test_sidebar_logo_renders(page: Page, route: str) -> None:
     """
     page.goto(route)
 
-    logo = page.locator('img[src="/public/neracoos.png"]').first
+    logo = page.locator('img[src="/static/neracoos.png"]').first
     # Once `complete` is true the browser has finished with the image, whether it
     # decoded or errored, so naturalWidth has settled. A 404 leaves the <img>
     # element in place with naturalWidth 0.
@@ -101,11 +101,25 @@ def test_health_endpoint_returns_200(api_request_context: APIRequestContext) -> 
 
 
 def test_public_logo_is_served(api_request_context: APIRequestContext) -> None:
-    """public/ is mounted, so the logo is fetchable as an image.
+    """The static route is mounted, so the logo is fetchable as an image.
 
     Checking the content type too, so that the catch-all marimo mount answering
     with an HTML page cannot pass this.
     """
-    response = api_request_context.get("/public/neracoos.png")
+    response = api_request_context.get("/static/neracoos.png")
     assert response.status == 200
     assert response.headers["content-type"].startswith("image/")
+
+
+def test_static_route_does_not_shadow_marimo(
+    api_request_context: APIRequestContext,
+) -> None:
+    """marimo's own /public-files-sw.js still reaches marimo.
+
+    granian matches --static-path-route as a plain string prefix rather than on
+    path segments, so serving the logo from a /public route would also swallow
+    this file -- and anything else whose path merely starts with those
+    characters -- and answer 404 instead of handing it to the app.
+    """
+    response = api_request_context.get("/public-files-sw.js?v=2")
+    assert response.status == 200
