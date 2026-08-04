@@ -31,7 +31,6 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: write # push the refreshed lock back to the Renovate branch
-      actions: write # re-dispatch Push; see the last step
 
     steps:
       # Unlike the other workflows this one has to push, so it keeps the
@@ -51,14 +50,20 @@ jobs:
       - name: Regenerate the lock file
         run: pixi lock
 
+      # Pushing with GITHUB_TOKEN does not trigger `on: push`, so this cannot
+      # loop on its own commit. It does mark the pull request as bot-updated,
+      # which parks that PR's `pull_request` runs at "awaiting approval" -- one
+      # "Approve and run" then starts them and they land in the PR's checks.
+      # That is why Push is not re-dispatched from here: a dispatched run is
+      # attributed to this workflow rather than the pull request, and it also
+      # cancels the still-running Push for the pre-relock commit through the
+      # shared concurrency group.
       - name: Commit and push the refreshed lock
-        id: commit
         env:
           BRANCH: ${{ github.ref_name }}
         run: |
           if git diff --quiet -- pixi.lock; then
             echo "pixi.lock already satisfies pyproject.toml; nothing to do."
-            echo "relocked=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -66,16 +71,3 @@ jobs:
           git add pixi.lock
           git commit -m "Regenerate pixi.lock for the updated dependency specs"
           git push origin "HEAD:$BRANCH"
-          echo "relocked=true" >> "$GITHUB_OUTPUT"
-
-      # A push made with GITHUB_TOKEN does not trigger `on: push`, which is both
-      # why this workflow cannot loop on its own commit and why Push has to be
-      # asked for explicitly -- otherwise the PR head would move to a commit
-      # carrying no checks at all, which is worse than a red one.
-      - name: Re-run Push against the relocked commit
-        if: steps.commit.outputs.relocked == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          BRANCH: ${{ github.ref_name }}
-        run:
-          gh workflow run push.yml --ref "$BRANCH" --repo "$GITHUB_REPOSITORY"

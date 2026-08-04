@@ -1,7 +1,14 @@
 name: "Push"
 
+# `pull_request` rather than `push` for branch builds, so the checks belong to
+# the pull request. That is what lets a Renovate PR whose lock was refreshed by
+# Relock pick these jobs up: a GITHUB_TOKEN push creates no `push` run at all,
+# but it does park the PR's `pull_request` runs at "awaiting approval", and one
+# approval then runs them and shows them in the PR's checks.
 on:
   push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 env:
