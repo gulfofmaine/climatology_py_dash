@@ -1,9 +1,4 @@
-"""Unit tests for the pure climatology math.
-
-Every case here is one a marimo cell could not be tested for: the computation
-used to live inside the notebook, so the only coverage it had was whichever path
-the Playwright suite happened to click through.
-"""
+"""Unit tests for the pure climatology math."""
 
 import datetime
 

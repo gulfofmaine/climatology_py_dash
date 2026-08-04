@@ -3,6 +3,8 @@ resources:
   - service.yaml
   - ingress.yaml
 
-commonLabels:
-  app: climatology
-  tier: frontend
+labels:
+  - pairs:
+      app: climatology
+      tier: frontend
+    includeSelectors: true
