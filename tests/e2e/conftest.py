@@ -5,13 +5,17 @@ starts the FastAPI/marimo app (``app:app``) in a subprocess on a free port and
 tears it down afterwards. If the ``E2E_BASE_URL`` environment variable is set,
 that URL is used as-is and no server is spawned -- handy for pointing the suite
 at an already-running server or Docker container (e.g. in CI).
+
+The subprocess runs the ``serve`` task from pyproject.toml, overriding only its
+host and port arguments, so a local run serves ``public/`` through granian
+exactly like the container does. Restating granian's static options here instead
+would let the two drift, and the sidebar logo would 404 in only one of them.
 """
 
 import os
 import signal
 import socket
 import subprocess
-import sys
 import time
 import urllib.error
 import urllib.request
@@ -57,7 +61,7 @@ def _wait_until_ready(url: str, timeout: float = 60.0) -> None:
 def app_server() -> str:
     """Yield the base URL of the running app.
 
-    Uses ``E2E_BASE_URL`` if set (no server spawned); otherwise starts uvicorn
+    Uses ``E2E_BASE_URL`` if set (no server spawned); otherwise starts granian
     in its own process group and cleans it up on teardown.
     """
     external_url = os.environ.get("E2E_BASE_URL")
@@ -69,16 +73,7 @@ def app_server() -> str:
     base_url = f"http://127.0.0.1:{port}"
 
     process = subprocess.Popen(
-        [
-            sys.executable,
-            "-m",
-            "uvicorn",
-            "app:app",
-            "--host",
-            "127.0.0.1",
-            "--port",
-            str(port),
-        ],
+        ["pixi", "run", "serve", "127.0.0.1", str(port)],
         cwd=str(REPO_ROOT),
         # New session/process group so the whole tree can be signalled together.
         start_new_session=True,

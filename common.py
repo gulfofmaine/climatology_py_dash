@@ -114,7 +114,7 @@ def sidebar_menu():
         [
             mo.Html("""
             <a href="https://neracoos.org">
-    <img src="public/neracoos.png" />
+    <img src="/public/neracoos.png" />
     </a>
     """),
             mo.nav_menu(

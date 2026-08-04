@@ -60,6 +60,25 @@ def test_sidebar_navigates_to_by_platform(page: Page) -> None:
     expect(page).to_have_url(re.compile(r"/by_platform/?"), timeout=RENDER_TIMEOUT)
 
 
+@pytest.mark.parametrize("route", [route for route, _ in PAGES])
+def test_sidebar_logo_renders(page: Page, route: str) -> None:
+    """The sidebar logo actually loads, on every mounted app.
+
+    The src is absolute so that it resolves the same from the sub-mounted pages;
+    a relative "public/neracoos.png" asks for "/by_platform/public/..." and 404s.
+    """
+    page.goto(route)
+
+    logo = page.locator('img[src="/public/neracoos.png"]').first
+    # Once `complete` is true the browser has finished with the image, whether it
+    # decoded or errored, so naturalWidth has settled. A 404 leaves the <img>
+    # element in place with naturalWidth 0.
+    expect(logo).to_have_js_property("complete", True, timeout=RENDER_TIMEOUT)
+    assert logo.evaluate("img => img.naturalWidth") > 0, (
+        f"sidebar logo did not load on {route}"
+    )
+
+
 @pytest.fixture
 def api_request_context(
     playwright: Playwright,
@@ -79,3 +98,14 @@ def test_health_endpoint_returns_200(api_request_context: APIRequestContext) -> 
     """The /health endpoint used by the Docker HEALTHCHECK returns 200."""
     response = api_request_context.get("/health")
     assert response.status == 200
+
+
+def test_public_logo_is_served(api_request_context: APIRequestContext) -> None:
+    """public/ is mounted, so the logo is fetchable as an image.
+
+    Checking the content type too, so that the catch-all marimo mount answering
+    with an HTML page cannot pass this.
+    """
+    response = api_request_context.get("/public/neracoos.png")
+    assert response.status == 200
+    assert response.headers["content-type"].startswith("image/")
