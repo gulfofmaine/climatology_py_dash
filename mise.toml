@@ -2,4 +2,4 @@
 # ghcr.io/prefix-dev/pixi:<version>-noble tag in the prod Dockerfile.
 [tools]
 pixi = "0.72.0"
-prek = "0.4.9"
+prek = "0.4.11"
