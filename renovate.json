@@ -8,5 +8,12 @@
   "lockFileMaintenance": {
     "enabled": true
   },
-  "minimumReleaseAge": "7 days"
+  "minimumReleaseAge": "7 days",
+  "packageRules": [
+    {
+      "description": "The node driver and the Python bindings must stay on the same version; a split pair fails every browser assertion",
+      "matchPackageNames": ["playwright", "playwright-python"],
+      "groupName": "playwright driver and bindings"
+    }
+  ]
 }
