@@ -19,3 +19,12 @@ def test_western_maine_shelf_air(page: Page) -> None:
     assert_chart_rendered(page)
 
     assert download_chart_png(page).suggested_filename.endswith(".png")
+
+
+def test_monthly_averaging_period(page: Page) -> None:
+    """Monthly used to die on `clim_df["Date"]` after that column was renamed
+    to "Month", so the whole averaging period was unreachable."""
+    page.goto("/climatology/?platform=Western+Maine+Shelf&ts=Air+Temperature")
+    page.get_by_label("Averaging Time Period").select_option("Monthly")
+
+    assert_chart_rendered(page)
