@@ -121,7 +121,25 @@ jobs:
 
       - name: Show app container logs
         if: failure()
-        run: docker logs climatology
+        run: |
+          mkdir -p test-results
+          # The full log ships as an artifact; the inline copy drops the
+          # thousands of static-asset, service-worker and health 200s that
+          # otherwise bury the pytest traceback (~4100 lines -> ~100). Anything
+          # else -- 404s, redirects, warnings, tracebacks, websocket lifecycle
+          # -- is kept inline.
+          #
+          # The status tail differs by server, so match both: uvicorn ends the
+          # line with `200 OK`, granian with `200 <duration>`. The optional
+          # ` HTTP/x.y` is what closes out a path with no trailing wildcard of
+          # its own, such as /health.
+          #
+          # grep exits 1 when it filters everything out, and this step runs
+          # under `bash -e`, hence the `|| true`.
+          docker logs climatology 2>&1 \
+            | tee test-results/container.log \
+            | grep -vE '"GET [^"]*/(assets/[^"]*|public-files-sw\.js(\?[^"]*)?|health)( HTTP/[0-9.]+)?" 200 (OK|[0-9.]+)$' \
+            || true
 
       - name: Upload test results
         if: failure()
