@@ -5,6 +5,11 @@ starts the FastAPI/marimo app (``app:app``) in a subprocess on a free port and
 tears it down afterwards. If the ``E2E_BASE_URL`` environment variable is set,
 that URL is used as-is and no server is spawned -- handy for pointing the suite
 at an already-running server or Docker container (e.g. in CI).
+
+The subprocess is granian with the same static-file arguments as the ``serve``
+task in pyproject.toml, so a local run serves ``public/`` exactly like the
+container does. Without them the sidebar logo 404s and only the local run would
+notice.
 """
 
 import os
@@ -57,7 +62,7 @@ def _wait_until_ready(url: str, timeout: float = 60.0) -> None:
 def app_server() -> str:
     """Yield the base URL of the running app.
 
-    Uses ``E2E_BASE_URL`` if set (no server spawned); otherwise starts uvicorn
+    Uses ``E2E_BASE_URL`` if set (no server spawned); otherwise starts granian
     in its own process group and cleans it up on teardown.
     """
     external_url = os.environ.get("E2E_BASE_URL")
@@ -72,12 +77,18 @@ def app_server() -> str:
         [
             sys.executable,
             "-m",
-            "uvicorn",
-            "app:app",
+            "granian",
+            "--interface",
+            "asgi",
             "--host",
             "127.0.0.1",
             "--port",
             str(port),
+            "--static-path-route",
+            "/public",
+            "--static-path-mount",
+            "public",
+            "app:app",
         ],
         cwd=str(REPO_ROOT),
         # New session/process group so the whole tree can be signalled together.

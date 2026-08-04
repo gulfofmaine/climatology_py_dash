@@ -12,10 +12,10 @@ server = (
 
 app = FastAPI()
 
+# public/ is served by granian, ahead of this app -- see the `serve` task in
+# pyproject.toml. marimo's own public-file convention (a relative
+# <img src="public/..."> resolved against a public/ directory beside the
+# notebook) does not reach those files once the notebooks are composed with
+# create_asgi_app(), so without that static route the sidebar logo 404s on
+# every page.
 app.mount("/", server.build())
-
-
-if __name__ == "__main__":
-    import uvicorn
-
-    uvicorn.run(app, host="0.0.0.0", port=8080)  # nosec B104

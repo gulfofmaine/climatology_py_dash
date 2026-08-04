@@ -26,7 +26,7 @@ vegafusion-python-embed = ">=1.6.9,<2"
 vl-convert-python = ">=1.7.0,<2"
 pyarrow = ">=24,<25"
 fastapi = ">=0.139,<0.140"
-uvicorn = ">=0.49,<0.50"
+granian = ">=2.7,<3"
 matplotlib-base = ">=3.10.8,<4"
 scipy = ">=1.15.2,<2"
 requests = ">=2.32.5,<3"
@@ -63,7 +63,10 @@ cmd = "playwright show-trace {{trace_path}}"
 edit = "marimo edit"
 app = "marimo run climatology.py"
 # serve = "marimo run climatology.py --host 0.0.0.0 -p 8080 --base-url /climatology"
-serve = "python app.py"
+# granian serves public/ itself, so requests for the logo never reach the app.
+# The route is absolute (/public) so it resolves identically from every
+# sub-mounted marimo app; see common.py's sidebar_menu().
+serve = "granian --interface asgi --host 0.0.0.0 --port 8080 --static-path-route /public --static-path-mount public app:app"
 
 [tool.pixi.workspace]
 channels = [ "conda-forge" ]
