@@ -27,6 +27,15 @@ spec:
             # If it fails 3 times in 30 seconds, it will be killed
             failureThreshold: 3
             periodSeconds: 10
+          # Without this the Service sends traffic to the pod as soon as it has
+          # an IP. The startup probe only gates the liveness check, so during a
+          # restart requests can arrive before the app answers them.
+          readinessProbe:
+            httpGet:
+              port: http
+              path: /health
+            failureThreshold: 3
+            periodSeconds: 10
           startupProbe:
             httpGet:
               port: http
