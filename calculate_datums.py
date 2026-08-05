@@ -82,8 +82,15 @@ def _(dataset_dropdown):
 
 
 @app.cell
-def _(dataset_id, erddapy, mo, use_qartod):
-    mo.stop(dataset_id is None)
+def _(common, dataset_id, erddapy, mo, use_qartod):
+    mo.stop(
+        dataset_id is None,
+        common.admonition(
+            "",
+            title="Please select a dataset to calculate datums for",
+            kind="warning",
+        ),
+    )
     e = erddapy.ERDDAP(
         server="https://data.neracoos.org/erddap",
         protocol="tabledap",
@@ -92,21 +99,28 @@ def _(dataset_id, erddapy, mo, use_qartod):
     e.dataset_id = dataset_id
     e.variables = ["time", "latitude", "longitude", "navd88_meters"]
     e.constraints = {"qartod_qc_rollup=": 1} if use_qartod.value else {}
+    e.requests_kwargs = {"timeout": common.ERDDAP_TIMEOUT}
     try:
         with mo.status.spinner("Loading data..."):
             df = e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
-    except Exception as e:
-        mo.output.append(f"Error loading data: {e}")
-    # df
+    except Exception as error:
+        # Stop rather than appending: the cell used to fall through to
+        # `return (df,)` with df unbound, so a load failure surfaced as a
+        # NameError from a cell several steps downstream.
+        mo.stop(
+            True,
+            common.admonition(
+                f"Error loading data: {error}",
+                title="Data Load Error",
+                kind="error",
+            ),
+        )
     return (df,)
 
 
 @app.cell
-def _(df, mo):
-    try:
-        latitude = df["latitude (degrees_north)"].mean()
-    except NameError:
-        mo.stop(True)
+def _(df):
+    latitude = df["latitude (degrees_north)"].mean()
     return (latitude,)
 
 
@@ -131,12 +145,13 @@ def _(common, df_reset, latitude, longitude, mo, tadc):
                 Subordinate_Lat=latitude,
                 Subordinate_Lon=longitude,
             )
-    except Exception as e:
-        mo.output.append(
+    except Exception as error:
+        mo.stop(
+            True,
             common.admonition(
                 kind="error",
                 title="Error",
-                content=f"Error trying to calculate datums: {e}",
+                content=f"Error trying to calculate datums: {error}",
             ),
         )
     return (out,)

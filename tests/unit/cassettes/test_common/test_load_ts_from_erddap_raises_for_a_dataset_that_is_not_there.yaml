@@ -1,0 +1,236 @@
+interactions:
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, br, zstd
+      Connection:
+      - keep-alive
+    method: GET
+    uri: https://raw.githubusercontent.com/IrishMarineInstitute/awesome-erddap/master/erddaps.json
+  response:
+    body:
+      string: "[\n\t{\n\t\t\"name\": \"Voice of the Ocean\",\n\t\t\"short_name\":
+        \"VOTO\",\n\t\t\"url\": \"https://erddap.observations.voiceoftheocean.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"St. Lawrence Global Observatory - CIOOS |
+        Observatoire global du Saint-Laurent - SIOOC\",\n\t\t\"short_name\": \"SLGO-OGSL\",\n\t\t\"url\":
+        \"https://erddap.ogsl.ca/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"CoastWatch West Coast Node\",\n\t\t\"short_name\": \"CSWC\",\n\t\t\"url\":
+        \"https://coastwatch.pfeg.noaa.gov/erddap/\",\n\t\t\"public\": true\n\t},\n
+        \   {\n\t\t\"name\": \"ERDDAP at the Asia-Pacific Data-Research Center\",\n\t\t\"short_name\":
+        \"APDRC\",\n\t\t\"url\": \"https://apdrc.soest.hawaii.edu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"NOAA's National Centers for Environmental
+        Information (NCEI)\",\n\t\t\"short_name\": \"NCEI\",\n\t\t\"url\": \"https://www.ncei.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"Biological and Chemical Oceanography Data
+        Management Office (BCO-DMO) ERDDAP\",\n\t\t\"short_name\": \"BCODMO\",\n\t\t\"url\":
+        \"https://erddap.bco-dmo.org/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"European Marine Observation and Data Network (EMODnet) ERDDAP\",\n\t\t\"short_name\":
+        \"EMODnet\",\n\t\t\"url\": \"https://erddap.emodnet.eu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"European Marine Observation and Data Network
+        (EMODnet) Physics ERDDAP\",\n\t\t\"short_name\": \"EMODnet Physics\",\n\t\t\"url\":
+        \"https://erddap.emodnet-physics.eu/erddap/\",\n\t\t\"public\": true\n\t},\n
+        \   {\n\t\t\"name\": \"Marine Institute - Ireland\",\n\t\t\"short_name\":
+        \"MII\",\n\t\t\"url\": \"https://erddap.marine.ie/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"CoastWatch Caribbean/Gulf of Mexico Node\",\n\t\t\"short_name\":
+        \"CSCGOM\",\n\t\t\"url\": \"https://cwcgom.aoml.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"NOAA IOOS Sensors ERDDAP\",\n\t\t\"short_name\":
+        \"IOOS-Sensors\",\n\t\t\"url\": \"https://erddap.sensors.ioos.us/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"CeNCOOS (Central and Northern California
+        Ocean Observing System) ERDDAP\",\n\t\t\"short_name\": \"CeNCOOS ERDDAP\",\n\t\t\"url\":
+        \"http://erddap.cencoos.org/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"NOAA IOOS NERACOOS (Northeastern Regional Association of Coastal and Ocean
+        Observing Systems)\",\n\t\t\"short_name\": \"NERACOOS\",\n\t\t\"url\": \"https://data.neracoos.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"NOAA IOOS NGDAC (National Glider Data Assembly
+        Center)\",\n\t\t\"short_name\": \"NGDAC\",\n\t\t\"url\": \"https://gliders.ioos.us/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"NOAA IOOS PacIOOS (Pacific Islands Ocean
+        Observing System) at the University of Hawaii (UH)\",\n\t\t\"short_name\":
+        \"PacIOOS\",\n\t\t\"url\": \"https://pae-paha.pacioos.hawaii.edu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"Southern California Coastal Ocean Observing
+        System (SCCOOS)\",\n\t\t\"short_name\": \"SCCOOS\",\n\t\t\"url\": \"https://sccoos.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"NOAA IOOS SECOORA (Southeast Coastal Ocean
+        Observing Regional Association)\",\n\t\t\"short_name\": \"SECOORA\",\n\t\t\"url\":
+        \"http://erddap.secoora.org/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"NOAA OSMC (Observing System Monitoring Center)\",\n\t\t\"short_name\": \"OSMC\",\n\t\t\"url\":
+        \"http://osmc.noaa.gov/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"ONC (Ocean Networks Canada)\",\n\t\t\"short_name\": \"ONC\",\n\t\t\"url\":
+        \"http://dap.onc.uvic.ca/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"OTN (Ocean Tracking Network)\",\n\t\t\"short_name\": \"OTN\",\n\t\t\"url\":
+        \"http://erddap.oceantrack.org/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"\",\n\t\t\"short_name\": \"PIFSC\",\n\t\t\"url\": \"https://oceanwatch.pifsc.noaa.gov/erddap/\",\n\t\t\"public\":
+        false\n\t},\n    {\n\t\t\"name\": \"Ocean Observatories Initiative (OOI)\",\n\t\t\"short_name\":
+        \"OOI\",\n\t\t\"url\": \"https://erddap.dataexplorer.oceanobservatories.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"Ocean Observatories Initiative (OOI) Goldcopy\",\n\t\t\"short_name\":
+        \"OOI Goldcopy\",\n\t\t\"url\": \"https://erddap-goldcopy.dataexplorer.oceanobservatories.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"Regional Ocean Modelling System\",\n\t\t\"short_name\":
+        \"MYROMS\",\n\t\t\"url\": \"http://www.myroms.org:8080/erddap/\",\n\t\t\"public\":
+        false\n\t},\n    {\n\t\t\"name\": \"Department of Marine and Coastal Sciences,
+        School of Environmental and Biological Sciences, Rutgers, The State University
+        of New Jersey\",\n\t\t\"short_name\": \"RUTGERS\",\n\t\t\"url\": \"http://tds.marine.rutgers.edu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"\",\n\t\t\"short_name\": \"NEFSC\",\n\t\t\"url\":
+        \"https://comet.nefsc.noaa.gov/erddap/\",\n\t\t\"public\": false\n\t},\n    {\n\t\t\"name\":
+        \"NOAA's Center for Operational Oceanographic Products and Services\",\n\t\t\"short_name\":
+        \"COOPS-NOS\",\n\t\t\"url\": \"https://opendap.co-ops.nos.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"GCOOS Atmospheric and Oceanographic: Historical
+        Data\",\n\t\t\"short_name\": \"GCOO5-TAMU\",\n\t\t\"url\": \"https://gcoos5.geos.tamu.edu/erddap/\",\n\t\t\"public\":
+        false\n\t},\n    {\n\t\t\"name\": \"GCOOS Biological and Socioeconomics\",\n\t\t\"short_name\":
+        \"GCOO4-TAMU\",\n\t\t\"url\": \"https://gcoos4.tamu.edu/erddap/\",\n\t\t\"public\":
+        false\n\t},\n    {\n\t\t\"name\": \"NOAA CoastWatch Great Lakes Node\",\n\t\t\"short_name\":
+        \"GLERL\",\n\t\t\"url\": \"https://apps.glerl.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"Spray Underwater Glider data from Instrument
+        Development Group, Scripps Institute of Oceanography, University of California,
+        San Diego\",\n\t\t\"short_name\": \"UCSD\",\n\t\t\"url\": \"https://spraydata.ucsd.edu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"UBC Earth, Ocean & Atmospheric Sciences
+        SalishSeaCast Project\",\n\t\t\"short_name\": \"UBC\",\n\t\t\"url\": \"https://salishsea.eos.ubc.ca/erddap/\",\n\t\t\"public\":
+        true\n\t},\n    {\n\t\t\"name\": \"UC Davis BML (University of California
+        at Davis, Bodega Marine Laboratory)\",\n\t\t\"short_name\": \"BMLSC\",\n\t\t\"url\":
+        \"http://bmlsc.ucdavis.edu:8080/erddap/\",\n\t\t\"public\": true\n\t},\n    {\n\t\t\"name\":
+        \"NOAA UAF (Unified Access Framework)\",\n\t\t\"short_name\": \"UAF\",\n\t\t\"url\":
+        \"https://upwell.pfeg.noaa.gov/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"French Research Institute for the Exploitation of the Sea\",\n\t\t\"short_name\":
+        \"IFREMER\",\n\t\t\"url\": \"https://www.ifremer.fr/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"NOAA PMEL (Pacific Marine Environmental Laboratory)\",\n\t\t\"short_name\":
+        \"PMEL\",\n\t\t\"url\": \"https://data.pmel.noaa.gov/pmel/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"ALAMO (Air Launched Autonomous Micro-Observer)\",\n\t\t\"short_name\":
+        \"ALAMO\",\n\t\t\"url\": \"https://ferret.pmel.noaa.gov/alamo/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"SOCAT (Surface Ocean CO2 ATlas)\",\n\t\t\"short_name\":
+        \"SOCAT\",\n\t\t\"url\": \"https://ferret.pmel.noaa.gov/socat/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Hakai Institute\",\n\t\t\"short_name\": \"Hakai\",\n\t\t\"url\":
+        \"https://catalogue.hakai.org/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"NOAA Polar Watch\",\n\t\t\"short_name\": \"POLARWATCH\",\n\t\t\"url\": \"https://polarwatch.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"USGS Coastal and Marine Geology Program\",\n\t\t\"short_name\":
+        \"USGS\",\n\t\t\"url\": \"https://geoport.usgs.esipfed.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"ESSO INCOIS (Indian National Centre for Ocean
+        Information Services)\",\n\t\t\"short_name\": \"INCOIS\",\n\t\t\"url\": \"https://erddap.incois.gov.in/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Smart Atlantic\",\n\t\t\"short_name\": \"SmartAtlantic\",\n\t\t\"url\":
+        \"https://www.smartatlantic.ca/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"GRIIDC (Gulf of Mexico Research Initiative\",\n\t\t\"short_name\": \"GRIIDC\",\n\t\t\"url\":
+        \"https://erddap.griidc.org/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"NOAA ATN IOOS (Animal Telemetry Network)\",\n\t\t\"short_name\": \"ATN-IOOS\",\n\t\t\"url\":
+        \"https://atn.ioos.us/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"DIVER (NOAA Office of Response and Restoration)\",\n\t\t\"short_name\":
+        \"DIVER\",\n\t\t\"url\": \"https://pub-data.diver.orr.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"GCOOS Atmospheric and Oceanographic: Observing
+        System\",\n\t\t\"short_name\": \"GCOOS\",\n\t\t\"url\": \"https://erddap.gcoos.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"University of Delaware, College of Earth,
+        Ocean and Environment\",\n\t\t\"short_name\": \"CEOE\",\n\t\t\"url\": \"https://basin.ceoe.udel.edu/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Canadian Integrated Ocean Observatory System
+        Atlantic\",\n\t\t\"short_name\": \"CIOOS Atlantic\",\n\t\t\"url\": \"https://cioosatlantic.ca/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Canadian Integrated Ocean Observatory System
+        Pacific\",\n\t\t\"short_name\": \"CIOOS Pacific\",\n\t\t\"url\": \"https://data.cioospacific.ca/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"European Multidisciplinary Seafloor and water
+        column Observatory (EMSO)\",\n\t\t\"short_name\": \"EMSO ERIC\",\n\t\t\"url\":
+        \"http://erddap.emso.eu/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"NOAA CoastWatch Central Operations\",\n\t\t\"short_name\": \"NCCO\",\n\t\t\"url\":
+        \"https://coastwatch.noaa.gov/erddap/\",\n\t\t\"public\": true\n\t},\n\t{\n\t\t\"name\":
+        \"The Canadian Watershed Information Network at the University of Manitoba\",\n\t\t\"short_name\":
+        \"CanWIN\",\n\t\t\"url\": \"https://canwinerddap.ad.umanitoba.ca/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"NOAA Oceanview\",\n\t\t\"short_name\": \"NOAA
+        Oceanview\",\n\t\t\"url\": \"https://oceanview.pfeg.noaa.gov/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"UNESCO IOC-IODE Ocean Acidification\", \n\t\t\"short_name\":
+        \"IOC-IODE-OA\", \n\t\t\"url\": \"https://erddap.oa.iode.org/erddap/\", \n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Linked Systems @ the British Oceanographic
+        Data Centre, National Oceanography Centre, UK\",\n\t\t\"short_name\": \"NOC-BODC
+        Linked Systems\",\n\t\t\"url\": \"https://linkedsystems.uk/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Bio-Oracle Erddap Server\",\n\t\t\"short_name\":
+        \"Bio-Oracle\",\n\t\t\"url\": \"https://erddap.bio-oracle.org/erddap/\",\n\t\t\"public\":
+        true\n\t},\n\t{\n\t\t\"name\": \"Commercial Fisheries Research Foundation\",\n\t\t\"short_name\":
+        \"CFRF\",\n\t\t\"url\": \"https://erddap.ondeckdata.com/erddap/\",\n\t\t\"public\":
+        true\n\t}\n]\n"
+    headers:
+      Accept-Ranges:
+      - bytes
+      Access-Control-Allow-Origin:
+      - '*'
+      Cache-Control:
+      - max-age=300
+      Connection:
+      - keep-alive
+      Content-Security-Policy:
+      - default-src 'none'; style-src 'unsafe-inline'; sandbox
+      Content-Type:
+      - text/plain; charset=utf-8
+      Cross-Origin-Resource-Policy:
+      - cross-origin
+      Date:
+      - Wed, 05 Aug 2026 17:03:23 GMT
+      ETag:
+      - W/"3ee71fff00adae3363858beb33a523e88e1e2374cc55d08b346ca69f05cf4608"
+      Expires:
+      - Wed, 05 Aug 2026 17:08:23 GMT
+      Source-Age:
+      - '2'
+      Strict-Transport-Security:
+      - max-age=31536000
+      Vary:
+      - Authorization,Accept-Encoding
+      Via:
+      - 1.1 varnish
+      X-Cache:
+      - HIT
+      X-Cache-Hits:
+      - '1'
+      X-Content-Type-Options:
+      - nosniff
+      X-Fastly-Request-ID:
+      - 52718fb83ca1a473cbfd2407e4722b071fe8c476
+      X-Frame-Options:
+      - deny
+      X-GitHub-Request-Id:
+      - 9278:317EC1:46F972:7D4527:6A73681D
+      X-Served-By:
+      - cache-chi-kmdw8640095-CHI
+      X-Timer:
+      - S1785949403.139062,VS0,VE1
+      X-XSS-Protection:
+      - 1; mode=block
+      content-length:
+      - '9626'
+      x-github-edge-region:
+      - iad
+    status:
+      code: 200
+      message: OK
+- request:
+    body: null
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate, br, zstd
+      Connection:
+      - keep-alive
+    method: GET
+    uri: http://erddap.sensors.ioos.us/erddap/tabledap/gov-ndbc-does-not-exist.csvp?time%2Csea_surface_temperature%26time%3E%3D1719792000.0%26time%3C%3D1719964800.0
+  response:
+    body:
+      string: "Error {\n    code=404;\n    message=\"Not Found: Currently unknown
+        datasetID=gov-ndbc-does-not-exist\";\n}\n"
+    headers:
+      Connection:
+      - keep-alive
+      Content-Description:
+      - dods-error
+      Content-Encoding:
+      - identity
+      Content-Type:
+      - text/plain;charset=UTF-8
+      Date:
+      - Wed, 05 Aug 2026 17:03:24 GMT
+      Last-Modified:
+      - Wed, 05 Aug 2026 17:03:24 GMT
+      Server:
+      - nginx/1.31.0
+      Set-Cookie:
+      - cid=CgIKAWpzbNtOjcPoA3o0Ag==; expires=Fri, 04-Aug-28 17:03:24 GMT; path=/
+      Transfer-Encoding:
+      - chunked
+      erddap-server:
+      - 2.30.0
+      xdods-server:
+      - dods/3.7
+    status:
+      code: 404
+      message: ''
+version: 1

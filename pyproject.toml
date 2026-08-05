@@ -39,6 +39,9 @@ test = { features = [ "test" ], solve-group = "default" }
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
 pytest-playwright = ">=0.7,<1"
+# Records the Buoy Barn and ERDDAP traffic the unit tests need into cassettes,
+# so they exercise the real request and response shapes without the network.
+pytest-recording = ">=0.13,<1"
 # conda-forge splits playwright into the node driver (playwright) and the Python
 # bindings (playwright-python), and they must move together. Constraining only
 # the driver let exclude-newer pull bindings 1.61 against driver 1.60 during
@@ -49,6 +52,11 @@ playwright = ">=1.62,<1.63"
 playwright-python = ">=1.61,<1.62"
 
 [tool.pixi.feature.test.tasks]
+unit = "pytest tests/unit"
+# Each cassette has to be recorded in its own pytest process -- see the module
+# docstring in tests/record_cassettes.py.
+unit-rerecord = "python tests/record_cassettes.py"
+unit-record-new = "python tests/record_cassettes.py --new-only"
 e2e = "pytest tests/e2e --browser chromium --screenshot only-on-failure --tracing retain-on-failure"
 e2e-install = "playwright install chromium"
 e2e-docker = "E2E_BASE_URL=http://localhost:8080 pixi run e2e"
@@ -150,6 +158,9 @@ addopts = [ "--verbose", "-ra", "--strict-markers", "--strict-config" ]
 filterwarnings = [ "error" ]
 log_level = "INFO"
 minversion = "9"
+# The app is a set of top-level modules rather than a package, so the unit tests
+# import them from the repository root.
+pythonpath = [ "." ]
 strict = true
 testpaths = [ "tests" ]
 
