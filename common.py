@@ -121,6 +121,26 @@ def query_param_default(query_params, key: str, options, fallback=None):
     return fallback
 
 
+def query_param_int(query_params, key, *, fallback, minimum=0, maximum=None):
+    """A query parameter as an int, clamped into range, or ``fallback``.
+
+    Widgets like ``mo.ui.number`` reject a value outside their own
+    ``start``/``stop`` range, so both a stored value and ``fallback`` are
+    clamped here -- a sparse dataset can have a maximum observation count
+    below a threshold's usual default.
+    """
+    value = query_params.get(key)
+    try:
+        result = int(value)
+    except (TypeError, ValueError):
+        result = fallback
+
+    result = max(result, minimum)
+    if maximum is not None:
+        result = min(result, maximum)
+    return int(result)
+
+
 def erddap_client(ts: dict):
     """A configured erddapy client for a Buoy Barn timeseries."""
     import erddapy
