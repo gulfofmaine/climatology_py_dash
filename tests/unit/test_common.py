@@ -126,6 +126,52 @@ def test_query_param_default_falls_back_when_unset():
     assert common.query_param_default(FakeQueryParams(), "year", ["2024"]) is None
 
 
+def test_query_param_int_accepts_a_valid_stored_value():
+    params = FakeQueryParams(threshold_daily="5")
+
+    assert common.query_param_int(params, "threshold_daily", fallback=18) == 5
+
+
+def test_query_param_int_falls_back_when_missing():
+    assert (
+        common.query_param_int(FakeQueryParams(), "threshold_daily", fallback=18) == 18
+    )
+
+
+def test_query_param_int_falls_back_when_not_numeric():
+    params = FakeQueryParams(threshold_daily="not-a-number")
+
+    assert common.query_param_int(params, "threshold_daily", fallback=18) == 18
+
+
+def test_query_param_int_clamps_a_stored_value_above_maximum():
+    params = FakeQueryParams(threshold_daily="100")
+
+    assert (
+        common.query_param_int(params, "threshold_daily", fallback=18, maximum=20) == 20
+    )
+
+
+def test_query_param_int_clamps_a_stored_value_below_minimum():
+    params = FakeQueryParams(threshold_daily="-5")
+
+    assert (
+        common.query_param_int(params, "threshold_daily", fallback=18, minimum=0) == 0
+    )
+
+
+def test_query_param_int_clamps_a_fallback_above_maximum():
+    assert (
+        common.query_param_int(
+            FakeQueryParams(),
+            "threshold_daily",
+            fallback=18,
+            maximum=10,
+        )
+        == 10
+    )
+
+
 def test_resample_to_budget_passes_small_frames_through_untouched():
     df = erddap_frame(10)
 

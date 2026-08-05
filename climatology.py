@@ -213,7 +213,7 @@ def _(average_period_dropdown, end_year_dropdown, start_year_dropdown):
 
 
 @app.cell
-def _(average_period_dropdown, column, df_no_index):
+def _(average_period_dropdown, column, df_no_index, query_params):
     _period = average_period_dropdown.value
     means = core.period_means(df_no_index, column, _period)
 
@@ -226,12 +226,24 @@ def _(average_period_dropdown, column, df_no_index):
             y="count()",
         )
     )
+    _stop = int(means["count"].max())
+    _key = f"threshold_{_period.lower()}"
     threshold = mo.ui.number(
         start=0,
-        stop=int(means["count"].max()),
+        stop=_stop,
         step=1,
-        value=core.threshold_default(_period),
+        value=common.query_param_int(
+            query_params,
+            _key,
+            fallback=core.threshold_default(_period),
+            maximum=_stop,
+        ),
         label=f"Minimum number of {'daily' if _period == core.DAILY else 'monthly'} values",
+        # Guarded like the dropdowns: emptying the field hands the callback
+        # None, and int(None) is a TypeError.
+        on_change=lambda value: (
+            query_params.set(_key, str(int(value))) if value is not None else None
+        ),
     )
 
     mo.accordion(
