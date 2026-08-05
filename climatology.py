@@ -417,6 +417,8 @@ def _(average_period_dropdown, clim_df, df_year, time_col, year_dropdown):
 
     if _period == core.DAILY:
         df_combined[time_col] = df_combined[time_col].dt.date
+    else:
+        df_combined[time_col] = df_combined[time_col].dt.strftime("%Y-%m")
 
     # Named rather than sliced by position: the slicing this replaces dropped
     # the mean column outright from the monthly table.
