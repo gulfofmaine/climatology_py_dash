@@ -188,17 +188,28 @@ def climatology(
     return clim[ordered]
 
 
+def _every_period_of(period: str, display_year: int) -> pd.DatetimeIndex:
+    """Every day or month of the year, so a series can be laid over all of it."""
+    if period == DAILY:
+        return pd.date_range(f"{display_year}-01-01", f"{display_year}-12-31", freq="D")
+    return pd.date_range(f"{display_year}-01-01", periods=12, freq="MS")
+
+
 def year_series(
     df: pd.DataFrame,
     column: str,
     period: str,
     display_year: str | int,
 ) -> pd.DataFrame:
-    """Daily or monthly means of ``column`` for a single year.
+    """Daily or monthly means of ``column`` for a single year, gaps included.
 
     Selected with ``.dt.year`` rather than string bounds: the comparison this
     replaces was exclusive at both ends, so an observation landing exactly on
     midnight, Jan 1 was dropped.
+
+    Laid over every period of the year, so periods without observations are
+    present as NaN rather than missing. That is what lets the plotted line break
+    at a data gap instead of drawing straight through it.
     """
     display_year = int(display_year)
     in_year = df[df[TIME_COLUMN].dt.year == display_year]
@@ -207,4 +218,11 @@ def year_series(
     means = in_year[column].groupby(keys).mean().rename("mean").reset_index()
 
     means = _with_period_dates(means, period, display_year)
-    return means[[time_column(period), "mean"]]
+
+    column_name = time_column(period)
+    return (
+        means.set_index(column_name)["mean"]
+        .reindex(_every_period_of(period, display_year))
+        .rename_axis(column_name)
+        .reset_index()
+    )

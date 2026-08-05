@@ -303,14 +303,14 @@ def neracoos_logo(
     max_time,
     title: str,
     time_col: str = "time (UTC)",
-    axis_format: str | None = None,
+    axis=None,
 ):
     """Render the NERACOOS logo at the top right place on a plot.
 
     ``max_time`` should be the largest time in the chart being layered onto, so
-    that the logo sits at its right edge. ``axis_format`` has to match whatever
-    the other layers use: layered charts merge their axes, so leaving it unset
-    here would let this layer's default formatting win.
+    that the logo sits at its right edge. Pass the same ``axis`` the other
+    layers use: layered charts merge their axes, and leaving this one to its
+    defaults gives Vega two different definitions to reconcile.
     """
     try:
         _image_df = pd.DataFrame(
@@ -346,7 +346,7 @@ def neracoos_logo(
             x=alt.X(
                 time_col,
                 type="temporal",
-                axis=alt.Axis(format=axis_format) if axis_format else alt.Undefined,
+                axis=axis if axis is not None else alt.Undefined,
             ),
             y=alt.value(0),
             url="image",
