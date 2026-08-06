@@ -266,8 +266,46 @@ def test_year_series_includes_an_observation_at_midnight_january_first():
 
     series = core.year_series(df, COLUMN, core.DAILY, 2024)
 
+    jan_first = series[series[core.TIME_COLUMN] == pd.Timestamp("2024-01-01")]
+    assert jan_first["mean"].item() == 101.0
+
+
+def test_year_series_covers_every_period_of_the_year():
+    """Laid over the whole year so a gap is a null the chart can break at."""
+    df = pd.concat(
+        [observations("2024-01-01", 10), observations("2024-03-01", 10)],
+        ignore_index=True,
+    )
+
+    series = core.year_series(df, COLUMN, core.DAILY, 2024)
+
+    assert len(series) == 366
     assert series[core.TIME_COLUMN].min() == pd.Timestamp("2024-01-01")
-    assert len(series) == 2
+    assert series[core.TIME_COLUMN].max() == pd.Timestamp("2024-12-31")
+
+
+def test_year_series_leaves_gaps_as_nulls():
+    df = pd.concat(
+        [observations("2024-01-01", 10), observations("2024-03-01", 10)],
+        ignore_index=True,
+    )
+
+    series = core.year_series(df, COLUMN, core.DAILY, 2024)
+    observed = series.set_index(core.TIME_COLUMN)["mean"]
+
+    assert observed[pd.Timestamp("2024-01-05")] == 105.0
+    assert pd.isna(observed[pd.Timestamp("2024-02-05")])
+    assert observed[pd.Timestamp("2024-03-05")] == 305.0
+    assert observed.notna().sum() == 20
+
+
+def test_year_series_monthly_covers_twelve_months():
+    df = observations("2024-01-01", 40)
+
+    series = core.year_series(df, COLUMN, core.MONTHLY, 2024)
+
+    assert len(series) == 12
+    assert series["mean"].notna().sum() == 2
 
 
 def test_year_series_only_covers_the_requested_year():
