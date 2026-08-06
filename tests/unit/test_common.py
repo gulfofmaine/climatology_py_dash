@@ -267,7 +267,10 @@ def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there(sentry_event
     this failure has to be caught as well as the transport ones."""
     missing = {**NDBC_SST, "dataset": "gov-ndbc-does-not-exist"}
 
-    with pytest.raises(common.ErddapLoadError, match="gov-ndbc-does-not-exist"):
+    with pytest.raises(
+        common.ErddapLoadError,
+        match="gov-ndbc-does-not-exist",
+    ) as excinfo:
         common.load_ts_from_erddap(missing)
 
     # Every caller of load_ts_from_erddap handles ErddapLoadError, so it is
@@ -278,6 +281,17 @@ def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there(sentry_event
     assert event["level"] == "warning"
     assert event["fingerprint"] == ["erddap-load", NDBC_SST["server"]]
     assert event["tags"]["dataset"] == "gov-ndbc-does-not-exist"
+
+    # Carried on the exception so a caller can offer it back to
+    # common.admonition(sentry_event_id=...) and let a feedback submission be
+    # linked to this exact event.
+    assert excinfo.value.sentry_event_id == event["event_id"]
+
+    # And the reported event's trace matches the load's own span, rather than
+    # a fresh, disconnected one -- see monitoring.report()'s docstring for why
+    # that depends on reporting from inside the span, not after it has closed.
+    assert event["contexts"]["trace"]["op"] == "http.client"
+    assert "gov-ndbc-does-not-exist" in event["transaction"]
 
 
 @pytest.mark.vcr
@@ -366,3 +380,35 @@ def test_admonition_report_can_be_forced_on_and_off(monkeypatch):
         "data-sentry-report"
         not in common.admonition("x", kind="attention", report=False).text
     )
+
+
+def test_admonition_embeds_a_valid_sentry_event_id():
+    """A real Sentry event id is 32 lowercase hex characters."""
+    rendered = common.admonition(
+        "x",
+        kind="error",
+        report=True,
+        sentry_event_id="4a99b1f0c54b4b248939e08c6485e90d",
+    ).text
+
+    assert 'data-sentry-event-id="4a99b1f0c54b4b248939e08c6485e90d"' in rendered
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        "",
+        "not-a-real-event-id",
+        '4a99b1f0c54b4b248939e08c6485e90d"><script>alert(1)</script>',
+    ],
+)
+def test_admonition_omits_a_missing_or_malformed_sentry_event_id(value):
+    rendered = common.admonition(
+        "x",
+        kind="error",
+        report=True,
+        sentry_event_id=value,
+    ).text
+
+    assert "data-sentry-event-id" not in rendered

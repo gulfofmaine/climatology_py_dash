@@ -93,6 +93,7 @@ def _(time_series_selector):
                         str(error),
                         title=f"Unable to load data for {_col_name}",
                         kind="error",
+                        sentry_event_id=error.sentry_event_id,
                     ),
                 )
     return loaded_ts, unit_ts

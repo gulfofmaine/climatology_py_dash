@@ -129,6 +129,7 @@ def _(ts):
                     str(error),
                     title="Data Load Error",
                     kind="error",
+                    sentry_event_id=error.sentry_event_id,
                 ),
             )
     return (df_all,)

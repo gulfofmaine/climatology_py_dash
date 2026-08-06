@@ -1,5 +1,6 @@
 import base64
 import functools
+import re
 from pathlib import Path
 
 import altair as alt
@@ -49,7 +50,17 @@ class ErddapLoadError(Exception):
     erddapy talks to ERDDAP with ``requests``, so pages catching httpx
     exceptions never caught anything at all. Wrapping the failure in one
     exception type keeps the pages out of that business entirely.
+
+    ``sentry_event_id`` carries the id of the Sentry event this failure was
+    already reported under (see ``load_ts_from_erddap``), so a caller
+    building an admonition from this exception can offer it back to
+    ``common.admonition(..., sentry_event_id=...)`` and let a feedback
+    submission be linked to this exact event.
     """
+
+    def __init__(self, message: str, *, sentry_event_id: str | None = None) -> None:
+        super().__init__(message)
+        self.sentry_event_id = sentry_event_id
 
 
 def set_defaults(page: str | None = None):
@@ -190,32 +201,38 @@ def load_ts_from_erddap(ts: dict) -> pd.DataFrame:
     import requests
 
     e = erddap_client(ts)
-    try:
-        with monitoring.operation(
-            f"erddap {ts['dataset']}",
-            op="http.client",
-            server=ts["server"],
-            dataset=ts["dataset"],
-            variable=ts["variable"],
-        ):
+    with monitoring.operation(
+        f"erddap {ts['dataset']}",
+        op="http.client",
+        server=ts["server"],
+        dataset=ts["dataset"],
+        variable=ts["variable"],
+    ):
+        try:
             df = e.to_pandas(index_col="time (UTC)", parse_dates=True)
-    except (requests.exceptions.RequestException, OSError, ValueError) as error:
-        # ERDDAP answers a rejected request with a non-CSV body, which reaches
-        # us as a pandas parse error rather than as an HTTP failure. Reported
-        # here, before wrapping, since every caller of this function handles
-        # ErddapLoadError and it would otherwise never reach Sentry. Grouped
-        # by server rather than dataset: an ERDDAP outage should be one
-        # alertable issue with many events, not one issue per dataset.
-        monitoring.report(
-            error,
-            where="erddap.load_ts",
-            level="warning",
-            fingerprint=["erddap-load", ts["server"]],
-            dataset=ts["dataset"],
-            variable=ts["variable"],
-        )
-        msg = f"Could not load {ts['dataset']} from {ts['server']}: {error}"
-        raise ErddapLoadError(msg) from error
+        except (requests.exceptions.RequestException, OSError, ValueError) as error:
+            # ERDDAP answers a rejected request with a non-CSV body, which
+            # reaches us as a pandas parse error rather than as an HTTP
+            # failure. Reported here, before wrapping, since every caller of
+            # this function handles ErddapLoadError and it would otherwise
+            # never reach Sentry. Grouped by server rather than dataset: an
+            # ERDDAP outage should be one alertable issue with many events,
+            # not one issue per dataset.
+            #
+            # Reported from inside the span (not after this `with` block
+            # exits): capture_exception() only picks up trace context that is
+            # still current, and the span's own __exit__ would have already
+            # torn that down by the time an outer `except` ran.
+            event_id = monitoring.report(
+                error,
+                where="erddap.load_ts",
+                level="warning",
+                fingerprint=["erddap-load", ts["server"]],
+                dataset=ts["dataset"],
+                variable=ts["variable"],
+            )
+            msg = f"Could not load {ts['dataset']} from {ts['server']}: {error}"
+            raise ErddapLoadError(msg, sentry_event_id=event_id) from error
     return df.dropna()
 
 
@@ -384,6 +401,7 @@ def admonition(
     kind: str = "admonition",
     *,
     report: bool | None = None,
+    sentry_event_id: str | None = None,
 ):
     """Create an admonition.
 
@@ -396,9 +414,22 @@ def admonition(
     DOMPurify (which strips event handlers) and then html-react-parser, so the
     click is handled by delegation in the snippet ``monitoring.html_head()``
     injects.
+
+    ``sentry_event_id`` -- the id of a Sentry event this admonition's failure
+    was already reported under, e.g. ``ErddapLoadError.sentry_event_id`` --
+    lets a feedback submission made from this admonition's link be linked to
+    that specific event, via the ``beforeSendFeedback`` hook in
+    ``monitoring.html_head()``, rather than floating free of it.
     """
     if report is None:
         report = kind == "error" and monitoring.enabled()
+
+    # Sentry's own event ids are 32 lowercase hex characters; anything else is
+    # not a real one, and this is the only guard before it goes straight into
+    # an HTML attribute.
+    event_attr = ""
+    if report and sentry_event_id and re.fullmatch(r"[0-9a-f]{32}", sentry_event_id):
+        event_attr = f' data-sentry-event-id="{sentry_event_id}"'
 
     # No newline before this: mo.md() runs the whole string through
     # inspect.cleandoc(), which dedents by the *smallest* common leading
@@ -410,7 +441,8 @@ def admonition(
     # rendering as literal text instead of a styled admonition. Keeping the
     # link on the same line as content sidesteps that entirely.
     footer = (
-        ' <a href="#" data-sentry-report="admonition">Tell us what you were doing</a>'
+        f' <a href="#" data-sentry-report="admonition"{event_attr}>'
+        "Tell us what you were doing</a>"
         if report
         else ""
     )

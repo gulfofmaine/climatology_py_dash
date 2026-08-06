@@ -155,6 +155,7 @@ def _(platform_options, selected_ts_keys, unit):
                             str(error),
                             title=f"Unable to load data for {_ts_name}",
                             kind="error",
+                            sentry_event_id=error.sentry_event_id,
                         ),
                     )
                     continue

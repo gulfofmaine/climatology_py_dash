@@ -253,11 +253,21 @@ def report(
     level: str = "error",
     fingerprint: list[str] | None = None,
     **tags: str,
-) -> None:
+) -> str | None:
     """Report an exception that was handled and will not propagate.
 
     Wrapped in a fresh scope so tags never leak onto the next report made from
-    the same long-lived kernel thread.
+    the same long-lived kernel thread. Returns the Sentry event id (or None
+    when there is no active client) so a caller can offer it back to the
+    browser -- see common.admonition()'s ``sentry_event_id`` -- letting a
+    feedback submission made from that specific admonition be linked to this
+    exact event instead of floating free of it.
+
+    Call this from *inside* whatever ``operation()`` span was active for the
+    work that failed, not after it has already exited: capture_exception()
+    only picks up trace/span context that is still current, and a `with`
+    block's __exit__ has already torn that down by the time an enclosing
+    `except` runs.
     """
     with sentry_sdk.isolation_scope() as scope:
         scope.set_tag("where", where)
@@ -266,7 +276,7 @@ def report(
             scope.set_tag(key, value)
         if fingerprint:
             scope.fingerprint = fingerprint
-        sentry_sdk.capture_exception(error)
+        return sentry_sdk.capture_exception(error)
 
 
 def tag_page(page: str) -> None:
@@ -384,6 +394,12 @@ _HEAD = Template("""
   // bundle this replaced, no defer/async is needed for Sentry's handlers to
   // be installed before marimo's own <script type="module"> boots.
   if (window.Sentry) {
+    // Set right before a feedback form is opened from a specific admonition,
+    // and consumed (then cleared) by the beforeSendFeedback listener below --
+    // see the click handler and admonition() (common.py) for where the id
+    // comes from.
+    var pendingAssociatedEventId = null;
+
     Sentry.onLoad(function () {
       var options = $options;
       options.integrations = [
@@ -403,6 +419,21 @@ _HEAD = Template("""
         })
       ];
       Sentry.init(options);
+
+      // feedbackIntegration()'s widget has no config option for linking a
+      // submission to a specific error event -- associatedEventId only
+      // exists on the low-level Sentry.captureFeedback() call the widget
+      // doesn't expose. beforeSendFeedback is a client-level escape hatch
+      // that runs on every feedback send, widget-submitted or not, and gets
+      // the constructed event by reference before it is sent -- mutating it
+      // here is what lets a feedback submitted from the widget still end up
+      // linked to the backend error the user clicked "report" on.
+      Sentry.getClient().on("beforeSendFeedback", function (feedbackEvent) {
+        if (pendingAssociatedEventId) {
+          feedbackEvent.contexts.feedback.associated_event_id = pendingAssociatedEventId;
+          pendingAssociatedEventId = null;
+        }
+      });
     });
 
     // marimo re-renders cells continuously, and runs everything it renders
@@ -417,6 +448,7 @@ _HEAD = Template("""
       var trigger = target.closest("[data-sentry-report]");
       if (!trigger) { return; }
       event.preventDefault();
+      pendingAssociatedEventId = trigger.getAttribute("data-sentry-event-id") || null;
       Sentry.onLoad(function () {
         var feedback = Sentry.getFeedback();
         if (!feedback) { return; }

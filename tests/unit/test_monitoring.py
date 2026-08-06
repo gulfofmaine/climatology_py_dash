@@ -211,6 +211,37 @@ def test_report_defaults_to_error_level(sentry_events):
     assert sentry_events[0]["level"] == "error"
 
 
+def test_report_returns_the_event_id(sentry_events):
+    """The returned id is what lets a caller offer the event back to the
+    browser -- see common.admonition()'s sentry_event_id -- so a feedback
+    submission can be linked to it."""
+    try:
+        msg = "erddap is down"
+        raise RuntimeError(msg)
+    except RuntimeError as error:
+        event_id = monitoring.report(error, where="erddap.load_ts")
+    sentry_sdk.flush()
+
+    assert event_id == sentry_events[0]["event_id"]
+
+
+def test_report_from_inside_an_active_span_inherits_its_trace(sentry_events):
+    """Reporting from *outside* the span that failed (after its `with` block
+    has already exited) would give the event an unrelated trace_id -- see
+    common.load_ts_from_erddap and calculate_datums.py, which both report
+    from inside the span for exactly this reason."""
+    with monitoring.operation("erddap test-dataset", op="http.client") as span:
+        trace_id = span.trace_id
+        try:
+            msg = "erddap is down"
+            raise RuntimeError(msg)
+        except RuntimeError as error:
+            monitoring.report(error, where="erddap.load_ts")
+    sentry_sdk.flush()
+
+    assert sentry_events[0]["contexts"]["trace"]["trace_id"] == trace_id
+
+
 # --- marimo upgrade canaries ------------------------------------------------
 #
 # These walk the same private chain install_marimo_hook() depends on. If a

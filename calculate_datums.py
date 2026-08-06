@@ -101,24 +101,42 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
     e.variables = ["time", "latitude", "longitude", "navd88_meters"]
     e.constraints = {"qartod_qc_rollup=": 1} if use_qartod.value else {}
     e.requests_kwargs = {"timeout": common.ERDDAP_TIMEOUT}
-    try:
-        with mo.status.spinner("Loading data..."):
+    with (
+        mo.status.spinner("Loading data..."),
+        monitoring.operation(
+            "calculate_datums.load",
+            op="http.client",
+            dataset=dataset_id,
+        ),
+    ):
+        try:
             df = e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
-    except Exception as error:
-        # This is a raw erddapy load with no ErddapLoadError wrapper, unlike
-        # common.load_ts_from_erddap -- report it directly, since it otherwise
-        # never reaches Sentry. Stop rather than appending: the cell used to
-        # fall through to `return (df,)` with df unbound, so a load failure
-        # surfaced as a NameError from a cell several steps downstream.
-        monitoring.report(error, where="calculate_datums.load", level="error")
-        mo.stop(
-            True,
-            common.admonition(
-                f"Error loading data: {error}",
-                title="Data Load Error",
-                kind="error",
-            ),
-        )
+        except Exception as error:
+            # This is a raw erddapy load with no ErddapLoadError wrapper,
+            # unlike common.load_ts_from_erddap -- report it directly, since
+            # it otherwise never reaches Sentry. Stop rather than appending:
+            # the cell used to fall through to `return (df,)` with df
+            # unbound, so a load failure surfaced as a NameError from a cell
+            # several steps downstream.
+            #
+            # Reported from inside the operation() span (not after this
+            # `with` exits): capture_exception() only picks up trace context
+            # that is still current, and the span's own __exit__ would have
+            # already torn that down by the time an outer `except` ran.
+            event_id = monitoring.report(
+                error,
+                where="calculate_datums.load",
+                level="error",
+            )
+            mo.stop(
+                True,
+                common.admonition(
+                    f"Error loading data: {error}",
+                    title="Data Load Error",
+                    kind="error",
+                    sentry_event_id=event_id,
+                ),
+            )
     return (df,)
 
 
@@ -142,37 +160,43 @@ def _(df):
 
 @app.cell
 def _(common, df_reset, latitude, longitude, mo, monitoring, tadc):
-    try:
-        with (
-            mo.redirect_stderr(),
-            mo.redirect_stdout(),
-            monitoring.operation(
-                "tadc.run",
-                op="compute",
-                rows=len(df_reset),
-            ),
-        ):
+    with (
+        mo.redirect_stderr(),
+        mo.redirect_stdout(),
+        monitoring.operation(
+            "tadc.run",
+            op="compute",
+            rows=len(df_reset),
+        ),
+    ):
+        try:
             out = tadc.run(
                 data=df_reset,
                 Subordinate_Lat=latitude,
                 Subordinate_Lon=longitude,
             )
-    except Exception as error:
-        # tadc is a third-party numerical library running on user-selected
-        # data -- exactly the kind of failure we want visibility into.
-        monitoring.report(
-            error,
-            where="calculate_datums.tadc_run",
-            level="error",
-        )
-        mo.stop(
-            True,
-            common.admonition(
-                kind="error",
-                title="Error",
-                content=f"Error trying to calculate datums: {error}",
-            ),
-        )
+        except Exception as error:
+            # tadc is a third-party numerical library running on
+            # user-selected data -- exactly the kind of failure we want
+            # visibility into. Reported from inside the operation() span (not
+            # after this `with` exits): capture_exception() only picks up
+            # trace context that is still current, and the span's own
+            # __exit__ would have already torn that down by the time an
+            # outer `except` ran.
+            event_id = monitoring.report(
+                error,
+                where="calculate_datums.tadc_run",
+                level="error",
+            )
+            mo.stop(
+                True,
+                common.admonition(
+                    kind="error",
+                    title="Error",
+                    content=f"Error trying to calculate datums: {error}",
+                    sentry_event_id=event_id,
+                ),
+            )
     return (out,)
 
 
