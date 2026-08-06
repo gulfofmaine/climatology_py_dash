@@ -85,7 +85,7 @@ def test_sentry_options_carries_environment_and_release():
 
 def test_traces_sampler_drops_health_checks():
     rate = monitoring._traces_sampler(
-        {"asgi_scope": {"type": "http", "path": "/health"}}
+        {"asgi_scope": {"type": "http", "path": "/health"}},
     )
     assert rate == 0.0
 
@@ -119,7 +119,9 @@ def test_traces_sampler_uses_the_configured_rate_for_everything_else(monkeypatch
 
 def test_mo_stop_is_not_reported(sentry_events):
     monitoring._capture_cell_exception(
-        FakeCell(), None, FakeRunResult(MarimoStopError(None))
+        FakeCell(),
+        None,
+        FakeRunResult(MarimoStopError(None)),
     )
     sentry_sdk.flush()
     assert sentry_events == []
@@ -128,7 +130,9 @@ def test_mo_stop_is_not_reported(sentry_events):
 def test_an_interrupt_is_not_reported(sentry_events):
     """MarimoInterrupt is an alias for KeyboardInterrupt."""
     monitoring._capture_cell_exception(
-        FakeCell(), None, FakeRunResult(MarimoInterrupt())
+        FakeCell(),
+        None,
+        FakeRunResult(MarimoInterrupt()),
     )
     sentry_sdk.flush()
     assert sentry_events == []
@@ -234,45 +238,89 @@ def test_the_post_execution_hook_signature_is_still_three_arguments():
 
 # --- html_head ---------------------------------------------------------
 
+FAKE_DSN = "https://public@example.invalid/1"
+FAKE_LOADER_URL = "https://js.sentry-cdn.com/testtesttesttesttesttesttest0000.min.js"
+
+
+def _configure(monkeypatch, *, dsn=FAKE_DSN, loader_url=FAKE_LOADER_URL):
+    """Set (or, with None, unset) SENTRY_DSN and SENTRY_LOADER_URL together --
+    html_head() and enabled() both require both."""
+    for name, value in (("SENTRY_DSN", dsn), ("SENTRY_LOADER_URL", loader_url)):
+        if value is None:
+            monkeypatch.delenv(name, raising=False)
+        else:
+            monkeypatch.setenv(name, value)
+
 
 @pytest.mark.parametrize("value", ["", "   ", None])
 def test_html_head_is_none_without_a_dsn(monkeypatch, value):
-    if value is None:
-        monkeypatch.delenv("SENTRY_DSN", raising=False)
-    else:
-        monkeypatch.setenv("SENTRY_DSN", value)
+    _configure(monkeypatch, dsn=value)
 
     assert monitoring.html_head() is None
 
 
-def test_html_head_rejects_a_non_https_dsn(monkeypatch, caplog):
-    monkeypatch.setenv("SENTRY_DSN", "not-a-dsn")
+@pytest.mark.parametrize("value", ["", "   ", None])
+def test_html_head_is_none_without_a_loader_url(monkeypatch, value):
+    _configure(monkeypatch, loader_url=value)
 
     assert monitoring.html_head() is None
-    assert "SENTRY_DSN" in caplog.text
 
 
-def test_html_head_contains_the_pinned_bundle_and_no_defer_or_async(monkeypatch):
-    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+def test_html_head_rejects_a_non_https_loader_url(monkeypatch, caplog):
+    _configure(monkeypatch, loader_url="not-a-url")
+
+    assert monitoring.html_head() is None
+    assert "SENTRY_LOADER_URL" in caplog.text
+
+
+def test_loader_url_env_accepts_the_whole_script_tag(monkeypatch):
+    """Sentry's dashboard hands this out as a whole <script src="...">
+    tag under the literal heading "Loader Script" -- pasting that as-is into
+    SENTRY_LOADER_URL, rather than picking the URL back out of it, is the
+    natural mistake to make. This is a real production incident: see the
+    conversation this test was added from."""
+    monkeypatch.setenv(
+        "SENTRY_LOADER_URL",
+        '<script src="https://js.sentry-cdn.com/abc123.min.js" '
+        'crossorigin="anonymous"></script>',
+    )
+
+    assert (
+        monitoring.Settings.from_env().loader_url
+        == "https://js.sentry-cdn.com/abc123.min.js"
+    )
+
+
+def test_html_head_contains_the_loader_script_and_no_defer_or_async(monkeypatch):
+    _configure(monkeypatch)
 
     head = monitoring.html_head()
 
-    assert monitoring.SENTRY_SDK_URL in head
-    assert f'integrity="{monitoring.SENTRY_SDK_SRI}"' in head
+    assert FAKE_LOADER_URL in head
     script_tag = re.search(r"<script src=.*?</script>", head).group()
     assert "defer" not in script_tag
     assert "async" not in script_tag
 
 
+def test_html_head_does_not_embed_the_dsn(monkeypatch):
+    """The loader URL has a DSN baked in server-side already; SENTRY_DSN here
+    only toggles whether the snippet is injected at all, and may even name a
+    different Sentry project (see README.md's local-testing note)."""
+    _configure(monkeypatch)
+
+    head = monitoring.html_head()
+
+    assert FAKE_DSN not in head
+
+
 def test_html_head_options_round_trip(monkeypatch):
-    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    _configure(monkeypatch)
     monkeypatch.setenv("SENTRY_ENVIRONMENT", "test")
     monkeypatch.setenv("SENTRY_RELEASE", "abc123")
 
     head = monitoring.html_head()
     options = json.loads(re.search(r"var options = (\{.*?\});", head, re.S).group(1))
 
-    assert options["dsn"] == "https://public@example.invalid/1"
     assert options["environment"] == "test"
     assert options["release"] == "abc123"
     assert options["sendDefaultPii"] is False
@@ -281,7 +329,7 @@ def test_html_head_options_round_trip(monkeypatch):
 
 
 def test_html_head_omits_environment_and_release_when_unset(monkeypatch):
-    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    _configure(monkeypatch)
     monkeypatch.delenv("SENTRY_ENVIRONMENT", raising=False)
     monkeypatch.delenv("SENTRY_RELEASE", raising=False)
 
@@ -292,11 +340,13 @@ def test_html_head_omits_environment_and_release_when_unset(monkeypatch):
     assert "release" not in options
 
 
-def test_html_head_neutralises_a_dsn_containing_a_closing_script_tag(monkeypatch):
-    monkeypatch.setenv(
-        "SENTRY_DSN",
-        'https://public@example.invalid/1"; </script><script>alert(1)//',
-    )
+def test_html_head_neutralises_an_environment_containing_a_closing_script_tag(
+    monkeypatch,
+):
+    """SENTRY_DSN no longer reaches the page (see test_html_head_does_not_embed_the_dsn),
+    but SENTRY_ENVIRONMENT still does, so it is what exercises the escaping."""
+    _configure(monkeypatch)
+    monkeypatch.setenv("SENTRY_ENVIRONMENT", '"; </script><script>alert(1)//')
 
     head = monitoring.html_head()
 
@@ -305,10 +355,14 @@ def test_html_head_neutralises_a_dsn_containing_a_closing_script_tag(monkeypatch
 
 
 def test_enabled_agrees_with_html_head(monkeypatch):
-    monkeypatch.delenv("SENTRY_DSN", raising=False)
+    _configure(monkeypatch, dsn=None, loader_url=None)
     assert monitoring.enabled() is False
     assert monitoring.html_head() is None
 
-    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    _configure(monkeypatch, dsn=FAKE_DSN, loader_url=None)
+    assert monitoring.enabled() is False
+    assert monitoring.html_head() is None
+
+    _configure(monkeypatch)
     assert monitoring.enabled() is True
     assert monitoring.html_head() is not None

@@ -21,16 +21,26 @@ spec:
             - containerPort: 8080
               name: http
           env:
-            # A DSN is not secret in the cryptographic sense -- the browser
-            # feedback widget publishes the same value in every page. The
-            # Secret keeps it out of git and away from gitleaks, nothing more.
-            # `optional: true` means the pod still starts if the Secret does
-            # not exist yet; the app treats an unset SENTRY_DSN as "off".
+            # A DSN is not secret in the cryptographic sense -- Sentry events
+            # can only be written with it, not read. The Secret keeps it out
+            # of git and away from gitleaks, nothing more. `optional: true`
+            # means the pod still starts if the Secret does not exist yet;
+            # the app treats an unset SENTRY_DSN as "off".
             - name: SENTRY_DSN
               valueFrom:
                 secretKeyRef:
                   name: climatology-sentry
                   key: dsn
+                  optional: true
+            # Unlike the DSN, this one is genuinely public -- it is injected
+            # into every page's HTML source verbatim. Kept in the same Secret
+            # anyway so the two travel together; find it on the Sentry
+            # project's Settings -> Loader Script page.
+            - name: SENTRY_LOADER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: climatology-sentry
+                  key: loader-url
                   optional: true
             - name: SENTRY_ENVIRONMENT
               value: production

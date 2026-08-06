@@ -10,6 +10,7 @@ import os
 from collections.abc import Generator
 
 import pytest
+from conftest import SENTRY_E2E_LOADER_URL
 from playwright.sync_api import APIRequestContext, Playwright, expect
 
 
@@ -31,20 +32,19 @@ def sentry_api_request_context(
 def test_sentry_script_is_injected(
     sentry_api_request_context: APIRequestContext,
 ) -> None:
-    """With SENTRY_DSN set, the pinned bundle and its SRI hash are on the page."""
+    """With SENTRY_DSN and SENTRY_LOADER_URL set, the loader script is on the page.
+
+    The loader's own URL has a DSN baked in server-side -- it is unrelated
+    to, and does not have to match, the dummy SENTRY_DSN this app instance
+    was started with.
+    """
     body = sentry_api_request_context.get("/").text()
-    assert "browser.sentry-cdn.com" in body
-    assert 'integrity="sha384-' in body
-    assert "SENTRY_E2E_DSN" not in body  # sanity: the literal value, not the name
+    assert SENTRY_E2E_LOADER_URL in body
 
 
 @pytest.mark.skipif(
     os.environ.get("E2E_SENTRY_WIDGET") != "1",
-    reason=(
-        "loads the real Sentry SDK from its CDN -- opt in with "
-        "E2E_SENTRY_WIDGET=1. Also requires monitoring.SENTRY_SDK_VERSION/"
-        "SENTRY_SDK_SRI to be filled in with real values first."
-    ),
+    reason="loads the real Sentry SDK from its CDN -- opt in with E2E_SENTRY_WIDGET=1",
 )
 def test_feedback_widget_button_appears(
     playwright: Playwright,

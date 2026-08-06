@@ -308,10 +308,44 @@ def test_admonition_offers_no_report_link_without_a_dsn(monkeypatch):
 
 def test_admonition_offers_a_report_link_for_errors_with_a_dsn(monkeypatch):
     monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.setenv(
+        "SENTRY_LOADER_URL",
+        "https://js.sentry-cdn.com/testtesttesttesttesttesttest0000.min.js",
+    )
 
     rendered = common.admonition("oops", kind="error").text
 
     assert "data-sentry-report" in rendered
+
+
+def test_admonition_offers_no_report_link_with_a_dsn_but_no_loader_url(monkeypatch):
+    """Both are required -- see monitoring.enabled()."""
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.delenv("SENTRY_LOADER_URL", raising=False)
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_with_a_report_link_still_parses_as_a_directive(monkeypatch):
+    """Regression test: the report link used to be appended on its own line,
+    which starts at column 0 while every other line sits at this function's
+    source indentation. mo.md() dedents via inspect.cleandoc(), which strips
+    the *smallest* common leading whitespace across all lines -- one line at
+    column 0 drops that common amount to zero, so the ///-fenced lines keep
+    their original indentation and fail to parse as a directive at all,
+    rendering literally instead of as a styled admonition box."""
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.setenv(
+        "SENTRY_LOADER_URL",
+        "https://js.sentry-cdn.com/testtesttesttesttesttesttest0000.min.js",
+    )
+
+    rendered = common.admonition("oops", title="Oops", kind="error").text
+
+    assert '<div class="admonition error">' in rendered
+    assert "///" not in rendered
 
 
 def test_admonition_never_offers_a_report_link_for_non_errors(monkeypatch):

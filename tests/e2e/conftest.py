@@ -38,6 +38,17 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 # -- nothing an end-to-end run does with it can leave the machine.
 SENTRY_E2E_DSN = "https://e2e00000000000000000000000000000@o0.ingest.invalid/1"
 
+# monitoring.py reads the loader URL itself from SENTRY_LOADER_URL, so there
+# is no hardcoded default to fall back on here. Set the real env var (e.g. in
+# a local shell) to exercise test_feedback_widget_button_appears against an
+# actual Sentry project; without it, the .invalid placeholder below is enough
+# for test_sentry_script_is_injected, which only checks the page's HTML and
+# never loads the URL.
+SENTRY_E2E_LOADER_URL = os.environ.get(
+    "SENTRY_LOADER_URL",
+    "https://js.sentry-cdn.com/e2e00000000000000000000000000000.min.js",
+)
+
 
 def _free_port() -> int:
     """Ask the OS for an unused TCP port and return it."""
@@ -129,6 +140,7 @@ def sentry_app_server() -> Generator[str | None]:
     process, base_url = _spawn_server(
         {
             "SENTRY_DSN": SENTRY_E2E_DSN,
+            "SENTRY_LOADER_URL": SENTRY_E2E_LOADER_URL,
             "SENTRY_ENVIRONMENT": "e2e",
             "SENTRY_RELEASE": "e2e",
         },

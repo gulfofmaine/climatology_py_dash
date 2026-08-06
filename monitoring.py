@@ -1,8 +1,10 @@
 """Sentry wiring: errors, traces, logs, and the browser feedback widget.
 
-Everything here is a no-op when ``SENTRY_DSN`` is unset, which is every local
-run, the devcontainer, and CI -- none of those set the variable, so none of
-them talk to Sentry or load a third-party script.
+Backend monitoring is a no-op when ``SENTRY_DSN`` is unset; the browser widget
+additionally needs ``SENTRY_LOADER_URL`` (Sentry's hosted loader script for a
+project, from that project's Loader Script settings). Local runs, the
+devcontainer, and CI leave both unset, so none of them talk to Sentry or load
+a third-party script.
 
 marimo runs each notebook's cells on a kernel that is a *thread* of the server
 process in run mode, not a subprocess (``marimo._session.managers.kernel``),
@@ -27,6 +29,7 @@ import contextlib
 import json
 import logging
 import os
+import re
 import threading
 from dataclasses import dataclass
 from string import Template
@@ -63,22 +66,6 @@ try:
     )
 except ImportError:
     _CONTROL_FLOW_TYPES = ()
-
-# Pinned the way this repo pins its GitHub Actions: the version is in the URL
-# and the sha384 is the browser's equivalent of a digest, so the file that
-# runs on every page cannot change under us. To bump, update both constants:
-#   curl -fsSL https://browser.sentry-cdn.com/<version>/bundle.tracing.replay.feedback.min.js \
-#     | openssl dgst -sha384 -binary | openssl base64 -A
-# Sentry publishes matching hashes on its "Install (CDN)" docs page for each
-# release. Renovate is deliberately not wired up for this -- it would bump the
-# URL and leave the old hash behind, and the browser would then refuse to run
-# the script, silently disabling the widget in production.
-SENTRY_SDK_VERSION = "FILL-IN"  # e.g. "10.x.y" -- see comment above
-SENTRY_SDK_SRI = "sha384-FILL-IN"
-SENTRY_SDK_URL = (
-    f"https://browser.sentry-cdn.com/{SENTRY_SDK_VERSION}"
-    "/bundle.tracing.replay.feedback.min.js"
-)
 
 # A tenth of page loads is enough to see how the app performs without
 # spending the whole event quota on a public dashboard. Errors are always
@@ -117,6 +104,17 @@ class Settings:
     environment: str | None = None
     release: str | None = None
     traces_sample_rate: float = _DEFAULT_TRACES_SAMPLE_RATE
+    # Sentry's hosted loader script for a project (Settings -> Loader Script
+    # in the Sentry UI). It is a small, always-current shim: Sentry serves
+    # updates behind this URL from their own CDN, so unlike a versioned
+    # bundle there is no version or SRI hash to track and bump in this repo
+    # -- the trust boundary is Sentry's CDN itself, same as for any other
+    # hosted snippet. The DSN is baked into this URL server-side already;
+    # Sentry.onLoad() in html_head() is what lets this file pin the
+    # integrations and their options explicitly instead of trusting whatever
+    # is toggled on the dashboard's Loader Script settings page. Example:
+    # SENTRY_LOADER_URL=https://js.sentry-cdn.com/<key>.min.js
+    loader_url: str = ""
 
     @classmethod
     def from_env(cls) -> Settings:
@@ -128,6 +126,7 @@ class Settings:
                 "SENTRY_TRACES_SAMPLE_RATE",
                 _DEFAULT_TRACES_SAMPLE_RATE,
             ),
+            loader_url=_loader_url_env("SENTRY_LOADER_URL"),
         )
 
 
@@ -140,6 +139,20 @@ def _float_env(name: str, default: float) -> float:
     except ValueError:
         LOGGER.warning("Ignoring %s: %r is not a number", name, value)
         return default
+
+
+# Sentry's own dashboard hands this out as a whole <script src="...
+# crossorigin="anonymous"></script> tag under the literal heading "Loader
+# Script" -- pasting that entire tag as the env var's value, rather than
+# picking the URL back out of it, is the natural mistake. Tolerate it rather
+# than merely warn about it.
+_SCRIPT_SRC_RE = re.compile(r"""src\s*=\s*["']([^"']+)["']""")
+
+
+def _loader_url_env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    match = _SCRIPT_SRC_RE.search(value)
+    return match.group(1) if match else value
 
 
 def _traces_sampler(sampling_context: dict) -> float:
@@ -223,8 +236,14 @@ def init_sentry() -> bool:
 
 
 def enabled() -> bool:
-    """Whether monitoring is configured -- the browser widget asks this too."""
-    return bool(Settings.from_env().dsn)
+    """Whether the browser widget is configured and will actually render.
+
+    Used by common.admonition() to decide whether its "tell us what you were
+    doing" link has anything to open -- which needs both variables, the same
+    as html_head() below.
+    """
+    settings = Settings.from_env()
+    return bool(settings.dsn) and bool(settings.loader_url)
 
 
 def report(
@@ -356,32 +375,35 @@ def _capture_cell_exception(cell: Any, _ctx: Any, run_result: Any) -> None:
 
 
 _HEAD = Template("""
-<link rel="preconnect" href="https://browser.sentry-cdn.com" crossorigin>
-<script src="$url" integrity="$sri" crossorigin="anonymous"></script>
+<link rel="preconnect" href="https://js.sentry-cdn.com" crossorigin>
+<script src="$loader_url" crossorigin="anonymous"></script>
 <script>
-  // marimo's own bundle is a <script type="module">, which is deferred, so
-  // this classic script runs first even though marimo injects it later in
-  // the head. That ordering is what lets Sentry install its handlers before
-  // marimo boots -- do not add defer/async to the script tag above.
+  // The loader is a small, synchronous shim: it registers window.Sentry and
+  // queues onLoad callbacks immediately, then fetches the full SDK in the
+  // background and runs this callback once it lands -- so, like the versioned
+  // bundle this replaced, no defer/async is needed for Sentry's handlers to
+  // be installed before marimo's own <script type="module"> boots.
   if (window.Sentry) {
-    var options = $options;
-    options.integrations = [
-      Sentry.browserTracingIntegration(),
-      // Replays are only kept when something went wrong -- that is the
-      // "what were they doing beforehand" the issue asks for, without
-      // recording every visitor to a public dashboard.
-      Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
-      Sentry.feedbackIntegration({
-        colorScheme: "system",
-        showBranding: false,
-        triggerLabel: "Report a problem",
-        formTitle: "Report a problem",
-        messagePlaceholder: "What were you trying to do?",
-        isNameRequired: false,
-        isEmailRequired: false
-      })
-    ];
-    Sentry.init(options);
+    Sentry.onLoad(function () {
+      var options = $options;
+      options.integrations = [
+        Sentry.browserTracingIntegration(),
+        // Replays are only kept when something went wrong -- that is the
+        // "what were they doing beforehand" the issue asks for, without
+        // recording every visitor to a public dashboard.
+        Sentry.replayIntegration({ maskAllText: true, blockAllMedia: true }),
+        Sentry.feedbackIntegration({
+          colorScheme: "system",
+          showBranding: false,
+          triggerLabel: "Report a problem",
+          formTitle: "Report a problem",
+          messagePlaceholder: "What were you trying to do?",
+          isNameRequired: false,
+          isEmailRequired: false
+        })
+      ];
+      Sentry.init(options);
+    });
 
     // marimo re-renders cells continuously, and runs everything it renders
     // through DOMPurify and then html-react-parser, which between them drop
@@ -395,14 +417,16 @@ _HEAD = Template("""
       var trigger = target.closest("[data-sentry-report]");
       if (!trigger) { return; }
       event.preventDefault();
-      var feedback = Sentry.getFeedback();
-      if (!feedback) { return; }
-      Promise.resolve(feedback.createForm({
-        formTitle: "Report a problem",
-        messagePlaceholder: "What were you doing when this happened?"
-      })).then(function (form) {
-        form.appendToDom();
-        form.open();
+      Sentry.onLoad(function () {
+        var feedback = Sentry.getFeedback();
+        if (!feedback) { return; }
+        Promise.resolve(feedback.createForm({
+          formTitle: "Report a problem",
+          messagePlaceholder: "What were you doing when this happened?"
+        })).then(function (form) {
+          form.appendToDom();
+          form.open();
+        });
       });
     });
   }
@@ -413,21 +437,28 @@ _HEAD = Template("""
 def html_head() -> str | None:
     """The <head> snippet for ``marimo.create_asgi_app(html_head=...)``.
 
-    None when there is no configured DSN, which is what keeps local runs, the
-    devcontainer, and the CI end-to-end suite free of any third-party script.
+    None unless both SENTRY_DSN and SENTRY_LOADER_URL are set, which is what
+    keeps local runs, the devcontainer, and the CI end-to-end suite free of
+    any third-party script.
     """
     settings = Settings.from_env()
-    if not settings.dsn:
+    if not settings.dsn or not settings.loader_url:
         return None
-    if not settings.dsn.startswith("https://"):
-        # A mis-set variable would otherwise be interpolated straight into a
-        # <script> block -- refuse anything that is not shaped like a DSN
-        # rather than risk that.
-        LOGGER.warning("Ignoring SENTRY_DSN: expected an https:// DSN")
+    if not settings.loader_url.startswith("https://"):
+        # Unlike the other settings below, this one is written straight into
+        # an HTML attribute rather than through json.dumps -- refuse anything
+        # that is not shaped like a URL rather than risk a malformed
+        # SENTRY_LOADER_URL breaking out of the src="..." attribute.
+        LOGGER.warning("Ignoring SENTRY_LOADER_URL: expected an https:// URL")
         return None
 
+    # No "dsn" key: the loader URL already has one baked in server-side (see
+    # Settings.loader_url). SENTRY_DSN only toggles whether this snippet is
+    # injected at all -- it does not have to name the same Sentry project as
+    # the loader, which matters when pointing SENTRY_DSN at a personal
+    # project for local testing (see README.md): backend events follow it,
+    # browser events still go to the project the loader is configured for.
     options: dict[str, Any] = {
-        "dsn": settings.dsn,
         "tracesSampleRate": settings.traces_sample_rate,
         "replaysSessionSampleRate": 0,
         "replaysOnErrorSampleRate": 1.0,
@@ -445,8 +476,7 @@ def html_head() -> str | None:
         options["release"] = settings.release
 
     return _HEAD.substitute(
-        url=SENTRY_SDK_URL,
-        sri=SENTRY_SDK_SRI,
+        loader_url=settings.loader_url,
         # json.dumps handles quotes, backslashes and control characters. It
         # leaves "<" alone, so a value containing "</script>" would close the
         # block early -- escaping "<" keeps the literal inert without

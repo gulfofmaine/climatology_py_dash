@@ -400,9 +400,17 @@ def admonition(
     if report is None:
         report = kind == "error" and monitoring.enabled()
 
+    # No newline before this: mo.md() runs the whole string through
+    # inspect.cleandoc(), which dedents by the *smallest* common leading
+    # whitespace across all lines. A footer on its own line would start at
+    # column 0 while every other line here sits at this function's source
+    # indentation, so cleandoc would find a common indent of zero, leave the
+    # ///-fenced lines exactly as indented as they are in the source, and the
+    # indented /// markers would then fail to parse as a directive at all --
+    # rendering as literal text instead of a styled admonition. Keeping the
+    # link on the same line as content sidesteps that entirely.
     footer = (
-        '\n\n<a href="#" data-sentry-report="admonition">'
-        "Tell us what you were doing</a>"
+        ' <a href="#" data-sentry-report="admonition">Tell us what you were doing</a>'
         if report
         else ""
     )
