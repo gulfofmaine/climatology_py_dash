@@ -163,6 +163,73 @@ def test_climatology_averages_the_same_calendar_day_across_years():
     assert march_first["min_date"].item() == datetime.date(2021, 3, 1)
 
 
+def leap_and_non_leap_years() -> pd.DataFrame:
+    """2019 (365 days) and 2020 (366), so day-of-year keys disagree after Feb."""
+    return pd.concat(
+        [observations("2019-01-01", 365), observations("2020-01-01", 366)],
+        ignore_index=True,
+    )
+
+
+def test_climatology_aligns_calendar_days_across_a_leap_year():
+    """Keyed on day of year, Mar 1 (day 60 in 2019) averaged with Feb 29 (day 60
+    in 2020), and everything after it was off by a day for the rest of the year.
+    """
+    means = core.period_means(leap_and_non_leap_years(), COLUMN, core.DAILY)
+    filtered = core.filter_means(means, threshold=0, start_year=2019, end_year=2020)
+
+    clim = core.climatology(filtered, core.DAILY, display_year=2021)
+
+    for stamp, expected in (
+        ("2021-03-01", 301.0),
+        ("2021-03-02", 302.0),
+        ("2021-12-31", 1231.0),
+    ):
+        row = clim[clim[core.TIME_COLUMN] == pd.Timestamp(stamp)]
+        assert row["mean"].item() == expected, f"{stamp} averaged the wrong day"
+
+
+def test_climatology_omits_the_leap_day_from_a_non_leap_display_year():
+    means = core.period_means(leap_and_non_leap_years(), COLUMN, core.DAILY)
+    filtered = core.filter_means(means, threshold=0, start_year=2019, end_year=2020)
+
+    clim = core.climatology(filtered, core.DAILY, display_year=2021)
+
+    assert len(clim) == 365
+    assert clim[core.TIME_COLUMN].dt.year.unique().tolist() == [2021]
+
+
+def test_climatology_keeps_the_leap_day_for_a_leap_display_year():
+    means = core.period_means(leap_and_non_leap_years(), COLUMN, core.DAILY)
+    filtered = core.filter_means(means, threshold=0, start_year=2019, end_year=2020)
+
+    clim = core.climatology(filtered, core.DAILY, display_year=2020)
+
+    assert len(clim) == 366
+    leap_day = clim[clim[core.TIME_COLUMN] == pd.Timestamp("2020-02-29")]
+    assert leap_day["mean"].item() == 229.0
+
+
+def test_climatology_never_maps_a_day_outside_the_display_year():
+    """Day-of-year keys ran to 366, and day 366 of a non-leap display year is
+    Jan 1 of the year after it."""
+    means = core.period_means(leap_and_non_leap_years(), COLUMN, core.DAILY)
+    filtered = core.filter_means(means, threshold=0, start_year=2019, end_year=2020)
+
+    clim = core.climatology(filtered, core.DAILY, display_year=2021)
+
+    assert clim[core.TIME_COLUMN].max() == pd.Timestamp("2021-12-31")
+
+
+def test_year_series_keeps_the_leap_day_of_a_leap_year():
+    df = leap_and_non_leap_years()
+
+    series = core.year_series(df, COLUMN, core.DAILY, 2020)
+
+    assert len(series) == 366
+    assert pd.Timestamp("2020-02-29") in set(series[core.TIME_COLUMN])
+
+
 def test_climatology_reports_the_year_that_set_each_extreme():
     warm = observations("2021-01-01", 2)
     cold = observations("2022-01-01", 2)
