@@ -351,11 +351,13 @@ def _(
     min_range_name,
     time_col,
     time_format,
+    year_column,
 ):
     # field= and type= rather than altair's shorthand, because these names carry
     # the climatology range in parentheses.
     clim_tooltip = [
         alt.Tooltip(field=time_col, type="temporal", format=time_format),
+        alt.Tooltip(field=year_column, type="quantitative", format=".2f"),
         alt.Tooltip(field=mean_range_name, type="quantitative", format=".2f"),
         alt.Tooltip(field=min_range_name, type="quantitative", format=".2f"),
         alt.Tooltip(field=min_date_name, type="nominal"),
@@ -376,9 +378,9 @@ def _():
 
 
 @app.cell
-def _(clim_df, clim_tooltip, max_range_name, min_range_name, time_axis, time_col):
+def _(clim_tooltip, df_plot, max_range_name, min_range_name, time_axis, time_col):
     area = (
-        alt.Chart(clim_df)
+        alt.Chart(df_plot)
         .mark_area(color="yellow", opacity=0.5)
         .encode(
             alt.X(time_col, type="temporal", axis=time_axis),
@@ -393,9 +395,9 @@ def _(clim_df, clim_tooltip, max_range_name, min_range_name, time_axis, time_col
 
 
 @app.cell
-def _(clim_df, clim_tooltip, mean_range_name, time_axis, time_col):
+def _(clim_tooltip, df_plot, mean_range_name, time_axis, time_col):
     mean = (
-        alt.Chart(clim_df)
+        alt.Chart(df_plot)
         .mark_line()
         .encode(
             alt.X(time_col, type="temporal", axis=time_axis),
@@ -420,29 +422,47 @@ def _(average_period_dropdown, column, df_no_index, year_dropdown):
 
 
 @app.cell
-def _(df_year, time_axis, time_col, time_format, ts, year_dropdown):
+def _(average_period_dropdown, clim_df, df_year, time_col, year_dropdown):
+    year_column = (
+        f"{'Daily' if average_period_dropdown.value == core.DAILY else 'Monthly'} mean"
+        f" for {year_dropdown.value}"
+    )
+
+    # Every layer draws from one frame, so a single hover reports the
+    # climatology and the selected year together instead of whichever mark
+    # happens to be under the cursor.
+    #
+    # Outer, so neither side loses rows: the year keeps the empty periods that
+    # break its line at data gaps, and the climatology keeps any period the
+    # year has no observations for.
+    df_plot = (
+        clim_df.merge(
+            df_year.rename({"mean": year_column}, axis=1),
+            on=time_col,
+            how="outer",
+        )
+        .sort_values(time_col)
+        .reset_index(drop=True)
+    )
+    return df_plot, year_column
+
+
+@app.cell
+def _(clim_tooltip, df_plot, time_axis, time_col, ts, year_column):
     _y_title = f"{ts['data_type']['long_name']} ({ts['data_type']['units']})"
 
     # Points and a connecting line. year_series lays the means over every period
     # of the year, so a gap in the data is a null and Vega breaks the line there
     # rather than drawing across it.
     line = (
-        alt.Chart(df_year)
+        alt.Chart(df_plot)
         # point=True would take the default colour, leaving blue dots on a red
         # line, so the overlay has to be coloured explicitly.
         .mark_line(point=alt.OverlayMarkDef(color="red"), color="red")
         .encode(
             alt.X(time_col, type="temporal", axis=time_axis),
-            alt.Y("mean").title(_y_title).scale(zero=False),
-            tooltip=[
-                alt.Tooltip(field=time_col, type="temporal", format=time_format),
-                alt.Tooltip(
-                    field="mean",
-                    type="quantitative",
-                    format=".2f",
-                    title=f"{year_dropdown.value} mean",
-                ),
-            ],
+            alt.Y(year_column).title(_y_title).scale(zero=False),
+            tooltip=clim_tooltip,
         )
     )
     return (line,)
