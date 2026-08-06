@@ -295,6 +295,7 @@ def _(
 ):
     _period = average_period_dropdown.value
     time_col = core.time_column(_period)
+    time_format = "%b %d" if _period == core.DAILY else "%b"
 
     with monitoring.operation("climatology.climatology", op="compute"):
         clim_df = core.climatology(means_filtered, _period, year_dropdown.value)
@@ -308,6 +309,16 @@ def _(
     min_date_name = f"Min {_when}"
     max_date_name = f"Max {_when}"
 
+    # The extreme dates say which year set the value; they are labels, not
+    # instants. Left as ISO strings, Vega's CSV type inference parses them back
+    # into dates and then renders them as quoted UTC timestamps, a day early
+    # anywhere west of UTC. Formatted like this there is nothing to infer.
+    _label_format = "%b %d, %Y" if _period == core.DAILY else "%b %Y"
+    for _date_column in ("min_date", "max_date"):
+        clim_df[_date_column] = clim_df[_date_column].map(
+            lambda date: date.strftime(_label_format),
+        )
+
     # Rounded by name rather than frame-wide: pandas warns that round() has no
     # effect on the date columns sitting alongside these.
     clim_df = clim_df.round({"mean": 2, "min": 2, "max": 2}).rename(
@@ -319,11 +330,43 @@ def _(
             "max_date": max_date_name,
         },
     )
-    return clim_df, max_range_name, mean_range_name, min_range_name, time_col
+    return (
+        clim_df,
+        max_date_name,
+        max_range_name,
+        mean_range_name,
+        min_date_name,
+        min_range_name,
+        time_col,
+        time_format,
+    )
 
 
 @app.cell
-def _(clim_df, max_range_name, min_range_name, time_col):
+def _(
+    max_date_name,
+    max_range_name,
+    mean_range_name,
+    min_date_name,
+    min_range_name,
+    time_col,
+    time_format,
+):
+    # field= and type= rather than altair's shorthand, because these names carry
+    # the climatology range in parentheses.
+    clim_tooltip = [
+        alt.Tooltip(field=time_col, type="temporal", format=time_format),
+        alt.Tooltip(field=mean_range_name, type="quantitative", format=".2f"),
+        alt.Tooltip(field=min_range_name, type="quantitative", format=".2f"),
+        alt.Tooltip(field=min_date_name, type="nominal"),
+        alt.Tooltip(field=max_range_name, type="quantitative", format=".2f"),
+        alt.Tooltip(field=max_date_name, type="nominal"),
+    ]
+    return (clim_tooltip,)
+
+
+@app.cell
+def _(clim_df, clim_tooltip, max_range_name, min_range_name, time_col):
     area = (
         alt.Chart(clim_df)
         .mark_area(color="yellow", opacity=0.5)
@@ -331,19 +374,21 @@ def _(clim_df, max_range_name, min_range_name, time_col):
             alt.X(time_col, type="temporal"),
             alt.Y(min_range_name),
             alt.Y2(max_range_name),
+            tooltip=clim_tooltip,
         )
     )
     return (area,)
 
 
 @app.cell
-def _(clim_df, mean_range_name, time_col):
+def _(clim_df, clim_tooltip, mean_range_name, time_col):
     mean = (
         alt.Chart(clim_df)
         .mark_line()
         .encode(
             alt.X(time_col, type="temporal"),
             alt.Y(mean_range_name),
+            tooltip=clim_tooltip,
         )
     )
     return (mean,)
@@ -351,17 +396,19 @@ def _(clim_df, mean_range_name, time_col):
 
 @app.cell
 def _(average_period_dropdown, column, df_no_index, year_dropdown):
+    # Rounded here so the hover, the selection table and the data table all
+    # show the two decimals the observations justify.
     df_year = core.year_series(
         df_no_index,
         column,
         average_period_dropdown.value,
         year_dropdown.value,
-    )
+    ).round({"mean": 2})
     return (df_year,)
 
 
 @app.cell
-def _(df_year, time_col, ts):
+def _(df_year, time_col, time_format, ts, year_dropdown):
     _y_title = f"{ts['data_type']['long_name']} ({ts['data_type']['units']})"
 
     line = (
@@ -370,6 +417,15 @@ def _(df_year, time_col, ts):
         .encode(
             alt.X(time_col, type="temporal"),
             alt.Y("mean").title(_y_title),
+            tooltip=[
+                alt.Tooltip(field=time_col, type="temporal", format=time_format),
+                alt.Tooltip(
+                    field="mean",
+                    type="quantitative",
+                    format=".2f",
+                    title=f"{year_dropdown.value} mean",
+                ),
+            ],
         )
     )
     return (line,)
