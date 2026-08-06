@@ -14,8 +14,9 @@ def _():
     import tadc
 
     import common
+    import monitoring
 
-    return OrderedDict, common, erddapy, mo, pd, tadc
+    return OrderedDict, common, erddapy, mo, monitoring, pd, tadc
 
 
 @app.cell
@@ -33,7 +34,7 @@ def _(mo):
 
 @app.cell
 def _(common):
-    common.set_defaults()
+    common.set_defaults(page="calculate_datums")
     common.sidebar_menu()
 
 
@@ -82,7 +83,7 @@ def _(dataset_dropdown):
 
 
 @app.cell
-def _(common, dataset_id, erddapy, mo, use_qartod):
+def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
     mo.stop(
         dataset_id is None,
         common.admonition(
@@ -104,9 +105,12 @@ def _(common, dataset_id, erddapy, mo, use_qartod):
         with mo.status.spinner("Loading data..."):
             df = e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
     except Exception as error:
-        # Stop rather than appending: the cell used to fall through to
-        # `return (df,)` with df unbound, so a load failure surfaced as a
-        # NameError from a cell several steps downstream.
+        # This is a raw erddapy load with no ErddapLoadError wrapper, unlike
+        # common.load_ts_from_erddap -- report it directly, since it otherwise
+        # never reaches Sentry. Stop rather than appending: the cell used to
+        # fall through to `return (df,)` with df unbound, so a load failure
+        # surfaced as a NameError from a cell several steps downstream.
+        monitoring.report(error, where="calculate_datums.load", level="error")
         mo.stop(
             True,
             common.admonition(
@@ -137,15 +141,30 @@ def _(df):
 
 
 @app.cell
-def _(common, df_reset, latitude, longitude, mo, tadc):
+def _(common, df_reset, latitude, longitude, mo, monitoring, tadc):
     try:
-        with mo.redirect_stderr(), mo.redirect_stdout():
+        with (
+            mo.redirect_stderr(),
+            mo.redirect_stdout(),
+            monitoring.operation(
+                "tadc.run",
+                op="compute",
+                rows=len(df_reset),
+            ),
+        ):
             out = tadc.run(
                 data=df_reset,
                 Subordinate_Lat=latitude,
                 Subordinate_Lon=longitude,
             )
     except Exception as error:
+        # tadc is a third-party numerical library running on user-selected
+        # data -- exactly the kind of failure we want visibility into.
+        monitoring.report(
+            error,
+            where="calculate_datums.tadc_run",
+            level="error",
+        )
         mo.stop(
             True,
             common.admonition(

@@ -12,11 +12,12 @@ with app.setup:
     import pandas as pd
 
     import common
+    import monitoring
 
 
 @app.cell
 def _():
-    common.set_defaults()
+    common.set_defaults(page="by_platform")
     common.sidebar_menu()
 
 
@@ -106,7 +107,12 @@ def _(loaded_ts):
                 _df = _df.loc[~_df.index.duplicated(keep="first")]
             _dfs.append(_df)
         df = pd.concat(_dfs, axis=1)
-    except ValueError:
+    except ValueError as error:
+        if _dfs:
+            # pd.concat([], axis=1) is the "nothing selected yet" case; a
+            # ValueError with data present is a genuine bug wearing the same
+            # message, and would otherwise never reach Sentry.
+            monitoring.report(error, where="by_platform.concat", level="error")
         mo.stop(
             True,
             common.admonition(

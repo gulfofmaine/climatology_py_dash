@@ -6,6 +6,8 @@ import altair as alt
 import marimo as mo
 import pandas as pd
 
+import monitoring
+
 # Maximum number of rows that Altair will render
 MAX_ROWS = 10_000
 
@@ -32,6 +34,15 @@ ERDDAP_TIMEOUT = (10, 180)
 HTTP_TIMEOUT = 30
 
 
+def tag_page(page: str) -> None:
+    """Tag this kernel's Sentry events with the notebook page it came from.
+
+    ``root.py`` has no other setup to hang this on, so it calls this directly
+    rather than through ``set_defaults()``.
+    """
+    monitoring.tag_page(page)
+
+
 class ErddapLoadError(Exception):
     """A timeseries could not be loaded from ERDDAP.
 
@@ -41,8 +52,16 @@ class ErddapLoadError(Exception):
     """
 
 
-def set_defaults():
-    """Set common defaults for the app."""
+def set_defaults(page: str | None = None):
+    """Set common defaults for the app.
+
+    ``page`` tags every Sentry event from this notebook's kernel thread with
+    the page it came from, so a reported cell error is traceable to the
+    notebook the user was on.
+    """
+    if page:
+        tag_page(page)
+
     pd.set_option("display.precision", 2)
 
     # Inline chart data in the vega spec rather than marimo's default of
@@ -66,15 +85,23 @@ def load_platform_json(visibility: str | None = None):
     """
     import httpx2
 
-    platform_res = httpx2.get(
-        BUOY_BARN_PLATFORMS,
-        params={"visibility": visibility} if visibility else None,
-        timeout=HTTP_TIMEOUT,
-    )
-    if platform_res.status_code != 200:
-        msg = f"Failed to load platforms: {platform_res.status_code}"
-        raise ValueError(msg)
-    return platform_res.json()
+    with monitoring.operation(
+        "buoy-barn platforms",
+        op="http.client",
+        visibility=visibility,
+    ) as span:
+        platform_res = httpx2.get(
+            BUOY_BARN_PLATFORMS,
+            params={"visibility": visibility} if visibility else None,
+            timeout=HTTP_TIMEOUT,
+        )
+        if platform_res.status_code != 200:
+            msg = f"Failed to load platforms: {platform_res.status_code}"
+            raise ValueError(msg)
+        platforms = platform_res.json()
+        if span is not None:
+            span.set_data("feature_count", len(platforms.get("features", ())))
+        return platforms
 
 
 def platforms_by_name(platform_json: dict) -> dict:
@@ -164,10 +191,29 @@ def load_ts_from_erddap(ts: dict) -> pd.DataFrame:
 
     e = erddap_client(ts)
     try:
-        df = e.to_pandas(index_col="time (UTC)", parse_dates=True)
+        with monitoring.operation(
+            f"erddap {ts['dataset']}",
+            op="http.client",
+            server=ts["server"],
+            dataset=ts["dataset"],
+            variable=ts["variable"],
+        ):
+            df = e.to_pandas(index_col="time (UTC)", parse_dates=True)
     except (requests.exceptions.RequestException, OSError, ValueError) as error:
         # ERDDAP answers a rejected request with a non-CSV body, which reaches
-        # us as a pandas parse error rather than as an HTTP failure.
+        # us as a pandas parse error rather than as an HTTP failure. Reported
+        # here, before wrapping, since every caller of this function handles
+        # ErddapLoadError and it would otherwise never reach Sentry. Grouped
+        # by server rather than dataset: an ERDDAP outage should be one
+        # alertable issue with many events, not one issue per dataset.
+        monitoring.report(
+            error,
+            where="erddap.load_ts",
+            level="warning",
+            fingerprint=["erddap-load", ts["server"]],
+            dataset=ts["dataset"],
+            variable=ts["variable"],
+        )
         msg = f"Could not load {ts['dataset']} from {ts['server']}: {error}"
         raise ErddapLoadError(msg) from error
     return df.dropna()
@@ -336,15 +382,35 @@ def admonition(
     content: str,
     title: str = "Attention",
     kind: str = "admonition",
+    *,
+    report: bool | None = None,
 ):
     """Create an admonition.
 
-    kind can be admonition, attention, warning, or error"""
+    kind can be admonition, attention, warning, or error
+
+    ``report`` offers a link that opens the Sentry feedback form. It defaults
+    to on for errors when browser monitoring is configured, and is always off
+    otherwise so the link is never a dead click. The trigger is a data
+    attribute rather than an ``onclick``: marimo runs rendered HTML through
+    DOMPurify (which strips event handlers) and then html-react-parser, so the
+    click is handled by delegation in the snippet ``monitoring.html_head()``
+    injects.
+    """
+    if report is None:
+        report = kind == "error" and monitoring.enabled()
+
+    footer = (
+        '\n\n<a href="#" data-sentry-report="admonition">'
+        "Tell us what you were doing</a>"
+        if report
+        else ""
+    )
     return mo.md(
         f"""
         /// {kind} | {title}
 
-        {content}
+        {content}{footer}
         ///
         """,
     )

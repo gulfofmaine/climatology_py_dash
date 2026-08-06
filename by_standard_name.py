@@ -12,6 +12,7 @@ with app.setup:
     import pandas as pd
 
     import common
+    import monitoring
 
 
 @app.cell
@@ -27,7 +28,7 @@ def _():
 
 @app.cell
 def _():
-    common.set_defaults()
+    common.set_defaults(page="by_standard_name")
     common.sidebar_menu()
 
 
@@ -167,7 +168,16 @@ def _(platform_options, selected_ts_keys, unit):
                 columns={"variable": "Timeseries", "value": unit},
             )
             wide_melted = wide_melted.set_index("time (UTC)")
-    except ValueError:
+    except ValueError as error:
+        if _wide_dfs:
+            # pd.concat([], axis=1) is the "nothing selected yet" case; a
+            # ValueError with data present is a genuine bug wearing the same
+            # message, and would otherwise never reach Sentry.
+            monitoring.report(
+                error,
+                where="by_standard_name.concat",
+                level="error",
+            )
         mo.stop(
             True,
             common.admonition(

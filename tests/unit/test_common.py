@@ -6,6 +6,7 @@ conftest.py.
 
 import pandas as pd
 import pytest
+import sentry_sdk
 
 import common
 
@@ -261,13 +262,22 @@ def test_load_ts_from_erddap_returns_the_requested_timeseries():
 
 
 @pytest.mark.vcr
-def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there():
+def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there(sentry_events):
     """ERDDAP answers a rejected request with a body pandas cannot parse, so
     this failure has to be caught as well as the transport ones."""
     missing = {**NDBC_SST, "dataset": "gov-ndbc-does-not-exist"}
 
     with pytest.raises(common.ErddapLoadError, match="gov-ndbc-does-not-exist"):
         common.load_ts_from_erddap(missing)
+
+    # Every caller of load_ts_from_erddap handles ErddapLoadError, so it is
+    # reported here, before the wrap, or it would never reach Sentry at all.
+    sentry_sdk.flush()
+    assert len(sentry_events) == 1
+    event = sentry_events[0]
+    assert event["level"] == "warning"
+    assert event["fingerprint"] == ["erddap-load", NDBC_SST["server"]]
+    assert event["tags"]["dataset"] == "gov-ndbc-does-not-exist"
 
 
 @pytest.mark.vcr
@@ -286,3 +296,39 @@ def test_load_ts_hands_back_a_fresh_frame_each_call():
     second = common.load_ts(NDBC_SST, "Sea Surface Temperature")
 
     assert "Sea Surface Temperature" in second.columns
+
+
+def test_admonition_offers_no_report_link_without_a_dsn(monkeypatch):
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_offers_a_report_link_for_errors_with_a_dsn(monkeypatch):
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" in rendered
+
+
+def test_admonition_never_offers_a_report_link_for_non_errors(monkeypatch):
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+
+    rendered = common.admonition("", kind="attention").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_report_can_be_forced_on_and_off(monkeypatch):
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+
+    assert (
+        "data-sentry-report" in common.admonition("x", kind="error", report=True).text
+    )
+    assert (
+        "data-sentry-report"
+        not in common.admonition("x", kind="attention", report=False).text
+    )

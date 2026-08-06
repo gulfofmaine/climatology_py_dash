@@ -1,8 +1,19 @@
 import marimo
 from fastapi import FastAPI
 
+import monitoring
+
+# Before create_asgi_app()/FastAPI(): Sentry instruments Starlette by patching
+# middleware construction, so apps built before init are not traced. Run-mode
+# marimo kernels are threads of this process (marimo._session.managers.kernel),
+# so this one call also covers every notebook's cells. A no-op when
+# SENTRY_DSN is unset.
+monitoring.init_sentry()
+
 server = (
-    marimo.create_asgi_app()
+    # Injected before </head> of every notebook page; None unless SENTRY_DSN is
+    # set, so nothing third-party loads outside a configured deployment.
+    marimo.create_asgi_app(html_head=monitoring.html_head())
     .with_app(path="/", root="./root.py")
     .with_app(path="/by_platform", root="./by_platform.py")
     .with_app(path="/by_standard_name", root="./by_standard_name.py")

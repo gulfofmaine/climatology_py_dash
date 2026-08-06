@@ -20,6 +20,22 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          env:
+            # A DSN is not secret in the cryptographic sense -- the browser
+            # feedback widget publishes the same value in every page. The
+            # Secret keeps it out of git and away from gitleaks, nothing more.
+            # `optional: true` means the pod still starts if the Secret does
+            # not exist yet; the app treats an unset SENTRY_DSN as "off".
+            - name: SENTRY_DSN
+              valueFrom:
+                secretKeyRef:
+                  name: climatology-sentry
+                  key: dsn
+                  optional: true
+            - name: SENTRY_ENVIRONMENT
+              value: production
+            - name: SENTRY_TRACES_SAMPLE_RATE
+              value: "0.2"
           livenessProbe:
             httpGet:
               port: http

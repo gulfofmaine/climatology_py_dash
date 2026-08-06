@@ -10,6 +10,11 @@ The subprocess runs the ``serve`` task from pyproject.toml, overriding only its
 host and port arguments, so a local run serves ``public/`` through granian
 exactly like the container does. Restating granian's static options here instead
 would let the two drift, and the sidebar logo would 404 in only one of them.
+
+``sentry_app_server`` (see tests/e2e/test_sentry.py) starts a second instance
+the same way, but with a dummy ``SENTRY_DSN`` set, so the Sentry-specific tests
+do not have to run against a DSN-less server the way the rest of the suite
+does.
 """
 
 import os
@@ -19,6 +24,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -26,6 +32,11 @@ import pytest
 # Repository root (two levels up from tests/e2e/conftest.py) so that the app's
 # relative paths (./root.py, ./public/neracoos.png, ...) resolve.
 REPO_ROOT = Path(__file__).resolve().parents[2]
+
+# RFC 2606 reserves .invalid, so this DSN is structurally valid enough for the
+# SDK to accept and configure the browser widget with, and can never resolve
+# -- nothing an end-to-end run does with it can leave the machine.
+SENTRY_E2E_DSN = "https://e2e00000000000000000000000000000@o0.ingest.invalid/1"
 
 
 def _free_port() -> int:
@@ -57,8 +68,28 @@ def _wait_until_ready(url: str, timeout: float = 60.0) -> None:
     )
 
 
+def _spawn_server(env: dict[str, str] | None = None) -> tuple[subprocess.Popen, str]:
+    """Start a fresh ``pixi run serve`` on a free port and wait for it to answer.
+
+    Extra ``env`` is layered on top of the current environment, so a caller can
+    add e.g. ``SENTRY_DSN`` without losing ``PATH`` and friends.
+    """
+    port = _free_port()
+    base_url = f"http://127.0.0.1:{port}"
+
+    process = subprocess.Popen(
+        ["pixi", "run", "serve", "127.0.0.1", str(port)],
+        cwd=str(REPO_ROOT),
+        # New session/process group so the whole tree can be signalled together.
+        start_new_session=True,
+        env={**os.environ, **(env or {})},
+    )
+    _wait_until_ready(base_url + "/", timeout=60.0)
+    return process, base_url
+
+
 @pytest.fixture(scope="session")
-def app_server() -> str:
+def app_server() -> Generator[str]:
     """Yield the base URL of the running app.
 
     Uses ``E2E_BASE_URL`` if set (no server spawned); otherwise starts granian
@@ -69,18 +100,40 @@ def app_server() -> str:
         yield external_url.rstrip("/")
         return
 
-    port = _free_port()
-    base_url = f"http://127.0.0.1:{port}"
-
-    process = subprocess.Popen(
-        ["pixi", "run", "serve", "127.0.0.1", str(port)],
-        cwd=str(REPO_ROOT),
-        # New session/process group so the whole tree can be signalled together.
-        start_new_session=True,
-    )
-
+    process, base_url = _spawn_server()
     try:
-        _wait_until_ready(base_url + "/", timeout=60.0)
+        yield base_url
+    finally:
+        _terminate(process)
+
+
+@pytest.fixture(scope="session")
+def sentry_app_server() -> Generator[str | None]:
+    """Base URL of a second app instance started with a dummy ``SENTRY_DSN``.
+
+    Honours ``E2E_SENTRY_BASE_URL`` the way ``app_server`` honours
+    ``E2E_BASE_URL``. Yields ``None`` (tests using this fixture should skip)
+    when the main suite is pointed at an external server via ``E2E_BASE_URL``
+    and no ``E2E_SENTRY_BASE_URL`` was given either -- there is then no way to
+    start a second, differently configured instance.
+    """
+    external_url = os.environ.get("E2E_SENTRY_BASE_URL")
+    if external_url:
+        yield external_url.rstrip("/")
+        return
+
+    if os.environ.get("E2E_BASE_URL"):
+        yield None
+        return
+
+    process, base_url = _spawn_server(
+        {
+            "SENTRY_DSN": SENTRY_E2E_DSN,
+            "SENTRY_ENVIRONMENT": "e2e",
+            "SENTRY_RELEASE": "e2e",
+        },
+    )
+    try:
         yield base_url
     finally:
         _terminate(process)
