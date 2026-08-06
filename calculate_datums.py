@@ -123,7 +123,7 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
             # `with` exits): capture_exception() only picks up trace context
             # that is still current, and the span's own __exit__ would have
             # already torn that down by the time an outer `except` ran.
-            event_id = monitoring.report(
+            _event_id = monitoring.report(
                 error,
                 where="calculate_datums.load",
                 level="error",
@@ -134,7 +134,7 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
                     f"Error loading data: {error}",
                     title="Data Load Error",
                     kind="error",
-                    sentry_event_id=event_id,
+                    sentry_event_id=_event_id,
                 ),
             )
     return (df,)
@@ -183,7 +183,7 @@ def _(common, df_reset, latitude, longitude, mo, monitoring, tadc):
             # trace context that is still current, and the span's own
             # __exit__ would have already torn that down by the time an
             # outer `except` ran.
-            event_id = monitoring.report(
+            _event_id = monitoring.report(
                 error,
                 where="calculate_datums.tadc_run",
                 level="error",
@@ -194,7 +194,7 @@ def _(common, df_reset, latitude, longitude, mo, monitoring, tadc):
                     kind="error",
                     title="Error",
                     content=f"Error trying to calculate datums: {error}",
-                    sentry_event_id=event_id,
+                    sentry_event_id=_event_id,
                 ),
             )
     return (out,)
