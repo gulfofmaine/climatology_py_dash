@@ -58,6 +58,12 @@ jobs:
           context: .
           push: false
           tags: gmri/neracoos-climatology-py-dash:latest
+          # Baked in here rather than supplied at deploy time: the image is
+          # built once, in this job, and merely retagged when it is pushed
+          # later, so this is the only point the release is guaranteed to
+          # match the image contents.
+          build-args: |
+            SENTRY_RELEASE=${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           outputs: type=docker,dest=/tmp/image.tar
@@ -114,6 +120,18 @@ jobs:
           docker run -d --name climatology -p 8080:8080
           gmri/neracoos-climatology-py-dash:latest
 
+      - name: Run app container with a dummy Sentry DSN
+        # A second instance, on its own port, so the Sentry-specific checks in
+        # tests/e2e/test_sentry.py run against a configured server without the
+        # rest of the suite's DSN-less assertions (test_pages.py) running
+        # against one that has Sentry turned on.
+        run: |
+          docker run -d --name climatology-sentry -p 8081:8080 \
+            -e SENTRY_DSN=https://e2e00000000000000000000000000000@o0.ingest.invalid/1 \
+            -e SENTRY_LOADER_URL=https://js.sentry-cdn.com/e2e00000000000000000000000000000.min.js \
+            -e SENTRY_ENVIRONMENT=e2e \
+            gmri/neracoos-climatology-py-dash:latest
+
       - name: Set up pixi
         uses: prefix-dev/setup-pixi@a09b6247153796b190642a2b53fac4241043cf6f # v0.10.0
         with:
@@ -131,15 +149,24 @@ jobs:
 
       - name: Wait for app to be ready
         run: |
-          for i in $(seq 1 60); do
-            curl -sf http://localhost:8080/health && exit 0
-            sleep 2
+          for port in 8080 8081; do
+            for i in $(seq 1 60); do
+              curl -sf http://localhost:$port/health && break
+              sleep 2
+              if [ "$i" -eq 60 ]; then
+                echo "App container on port $port did not become ready within 120 seconds" >&2
+                exit 1
+              fi
+            done
           done
-          echo "App container did not become ready within 120 seconds" >&2
-          exit 1
 
       - name: Run end-to-end tests
-        run: E2E_BASE_URL=http://localhost:8080 pixi run -e test e2e
+        # E2E_SENTRY_WIDGET is deliberately left unset -- that test loads the
+        # real Sentry SDK from its CDN, and CI stays off the network here.
+        run: |
+          E2E_BASE_URL=http://localhost:8080 \
+          E2E_SENTRY_BASE_URL=http://localhost:8081 \
+          pixi run -e test e2e
 
       - name: Show app container logs
         if: failure()
@@ -162,6 +189,7 @@ jobs:
             | tee test-results/container.log \
             | grep -vE '"GET [^"]*/(assets/[^"]*|public-files-sw\.js(\?[^"]*)?|health)( HTTP/[0-9.]+)?" 200 (OK|[0-9.]+)$' \
             || true
+          docker logs climatology-sentry > test-results/container-sentry.log 2>&1 || true
 
       - name: Upload test results
         if: failure()

@@ -19,6 +19,7 @@ def _():
 
 @app.cell
 def _(common):
+    common.tag_page("root")
     common.sidebar_menu()
 
 

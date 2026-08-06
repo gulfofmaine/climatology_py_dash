@@ -123,3 +123,19 @@ def test_static_route_does_not_shadow_marimo(
     """
     response = api_request_context.get("/public-files-sw.js?v=2")
     assert response.status == 200
+
+
+@pytest.mark.parametrize("route", [route for route, _ in PAGES])
+def test_no_sentry_script_without_a_dsn(
+    api_request_context: APIRequestContext,
+    route: str,
+) -> None:
+    """With no SENTRY_DSN, the pages load no third-party script.
+
+    Local runs, the devcontainer, and this suite by default all leave the
+    variable unset, and none of them should be reaching out to a CDN or to
+    Sentry -- see monitoring.html_head().
+    """
+    body = api_request_context.get(route).text()
+    assert "sentry-cdn.com" not in body
+    assert "Sentry.init" not in body

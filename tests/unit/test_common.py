@@ -6,6 +6,7 @@ conftest.py.
 
 import pandas as pd
 import pytest
+import sentry_sdk
 
 import common
 
@@ -261,13 +262,36 @@ def test_load_ts_from_erddap_returns_the_requested_timeseries():
 
 
 @pytest.mark.vcr
-def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there():
+def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there(sentry_events):
     """ERDDAP answers a rejected request with a body pandas cannot parse, so
     this failure has to be caught as well as the transport ones."""
     missing = {**NDBC_SST, "dataset": "gov-ndbc-does-not-exist"}
 
-    with pytest.raises(common.ErddapLoadError, match="gov-ndbc-does-not-exist"):
+    with pytest.raises(
+        common.ErddapLoadError,
+        match="gov-ndbc-does-not-exist",
+    ) as excinfo:
         common.load_ts_from_erddap(missing)
+
+    # Every caller of load_ts_from_erddap handles ErddapLoadError, so it is
+    # reported here, before the wrap, or it would never reach Sentry at all.
+    sentry_sdk.flush()
+    assert len(sentry_events) == 1
+    event = sentry_events[0]
+    assert event["level"] == "warning"
+    assert event["fingerprint"] == ["erddap-load", NDBC_SST["server"]]
+    assert event["tags"]["dataset"] == "gov-ndbc-does-not-exist"
+
+    # Carried on the exception so a caller can offer it back to
+    # common.admonition(sentry_event_id=...) and let a feedback submission be
+    # linked to this exact event.
+    assert excinfo.value.sentry_event_id == event["event_id"]
+
+    # And the reported event's trace matches the load's own span, rather than
+    # a fresh, disconnected one -- see monitoring.report()'s docstring for why
+    # that depends on reporting from inside the span, not after it has closed.
+    assert event["contexts"]["trace"]["op"] == "http.client"
+    assert "gov-ndbc-does-not-exist" in event["transaction"]
 
 
 @pytest.mark.vcr
@@ -286,3 +310,105 @@ def test_load_ts_hands_back_a_fresh_frame_each_call():
     second = common.load_ts(NDBC_SST, "Sea Surface Temperature")
 
     assert "Sea Surface Temperature" in second.columns
+
+
+def test_admonition_offers_no_report_link_without_a_dsn(monkeypatch):
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_offers_a_report_link_for_errors_with_a_dsn(monkeypatch):
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.setenv(
+        "SENTRY_LOADER_URL",
+        "https://js.sentry-cdn.com/testtesttesttesttesttesttest0000.min.js",
+    )
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" in rendered
+
+
+def test_admonition_offers_no_report_link_with_a_dsn_but_no_loader_url(monkeypatch):
+    """Both are required -- see monitoring.enabled()."""
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.delenv("SENTRY_LOADER_URL", raising=False)
+
+    rendered = common.admonition("oops", kind="error").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_with_a_report_link_still_parses_as_a_directive(monkeypatch):
+    """Regression test: the report link used to be appended on its own line,
+    which starts at column 0 while every other line sits at this function's
+    source indentation. mo.md() dedents via inspect.cleandoc(), which strips
+    the *smallest* common leading whitespace across all lines -- one line at
+    column 0 drops that common amount to zero, so the ///-fenced lines keep
+    their original indentation and fail to parse as a directive at all,
+    rendering literally instead of as a styled admonition box."""
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+    monkeypatch.setenv(
+        "SENTRY_LOADER_URL",
+        "https://js.sentry-cdn.com/testtesttesttesttesttesttest0000.min.js",
+    )
+
+    rendered = common.admonition("oops", title="Oops", kind="error").text
+
+    assert '<div class="admonition error">' in rendered
+    assert "///" not in rendered
+
+
+def test_admonition_never_offers_a_report_link_for_non_errors(monkeypatch):
+    monkeypatch.setenv("SENTRY_DSN", "https://public@example.invalid/1")
+
+    rendered = common.admonition("", kind="attention").text
+
+    assert "data-sentry-report" not in rendered
+
+
+def test_admonition_report_can_be_forced_on_and_off(monkeypatch):
+    monkeypatch.delenv("SENTRY_DSN", raising=False)
+
+    assert (
+        "data-sentry-report" in common.admonition("x", kind="error", report=True).text
+    )
+    assert (
+        "data-sentry-report"
+        not in common.admonition("x", kind="attention", report=False).text
+    )
+
+
+def test_admonition_embeds_a_valid_sentry_event_id():
+    """A real Sentry event id is 32 lowercase hex characters."""
+    rendered = common.admonition(
+        "x",
+        kind="error",
+        report=True,
+        sentry_event_id="4a99b1f0c54b4b248939e08c6485e90d",
+    ).text
+
+    assert 'data-sentry-event-id="4a99b1f0c54b4b248939e08c6485e90d"' in rendered
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        None,
+        "",
+        "not-a-real-event-id",
+        '4a99b1f0c54b4b248939e08c6485e90d"><script>alert(1)</script>',
+    ],
+)
+def test_admonition_omits_a_missing_or_malformed_sentry_event_id(value):
+    rendered = common.admonition(
+        "x",
+        kind="error",
+        report=True,
+        sentry_event_id=value,
+    ).text
+
+    assert "data-sentry-event-id" not in rendered

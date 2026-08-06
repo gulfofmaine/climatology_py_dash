@@ -23,6 +23,13 @@ USER app_user
 
 ENV MARIMO_SKIP_UPDATE_CHECK=1
 
+# Baked in at build time rather than supplied at deploy time: the image is
+# built once (see the `build` job in .github/workflows/push.yml) and merely
+# retagged when it is pushed, so this is the only point at which the release
+# is guaranteed to match the image contents.
+ARG SENTRY_RELEASE=""
+ENV SENTRY_RELEASE=${SENTRY_RELEASE}
+
 CMD ["pixi", "run", "--frozen", "serve"]
 
 HEALTHCHECK --interval=30s --timeout=3s \

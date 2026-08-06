@@ -9,11 +9,12 @@ with app.setup:
 
     import climatology_core as core
     import common
+    import monitoring
 
 
 @app.cell
 def _():
-    common.set_defaults()
+    common.set_defaults(page="climatology")
     common.sidebar_menu()
 
 
@@ -128,6 +129,7 @@ def _(ts):
                     str(error),
                     title="Data Load Error",
                     kind="error",
+                    sentry_event_id=error.sentry_event_id,
                 ),
             )
     return (df_all,)
@@ -215,7 +217,8 @@ def _(average_period_dropdown, end_year_dropdown, start_year_dropdown):
 @app.cell
 def _(average_period_dropdown, column, df_no_index, query_params):
     _period = average_period_dropdown.value
-    means = core.period_means(df_no_index, column, _period)
+    with monitoring.operation("climatology.period_means", op="compute"):
+        means = core.period_means(df_no_index, column, _period)
 
     _per = "day" if _period == core.DAILY else "month"
     _threshold_chart = (
@@ -271,12 +274,13 @@ def _(average_period_dropdown, column, df_no_index, query_params):
 
 @app.cell
 def _(end_year_dropdown, means, start_year_dropdown, threshold):
-    means_filtered = core.filter_means(
-        means,
-        threshold=threshold.value,
-        start_year=start_year_dropdown.value,
-        end_year=end_year_dropdown.value,
-    )
+    with monitoring.operation("climatology.filter_means", op="compute"):
+        means_filtered = core.filter_means(
+            means,
+            threshold=threshold.value,
+            start_year=start_year_dropdown.value,
+            end_year=end_year_dropdown.value,
+        )
     # means_filtered
     return (means_filtered,)
 
@@ -292,7 +296,8 @@ def _(
     _period = average_period_dropdown.value
     time_col = core.time_column(_period)
 
-    clim_df = core.climatology(means_filtered, _period, year_dropdown.value)
+    with monitoring.operation("climatology.climatology", op="compute"):
+        clim_df = core.climatology(means_filtered, _period, year_dropdown.value)
 
     _range = f"({start_year_dropdown.value} - {end_year_dropdown.value})"
     mean_range_name = f"Mean {_range}"
