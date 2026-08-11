@@ -47,7 +47,7 @@ def _(platform_json):
         for _ts in _platform["properties"]["readings"]:
             _standard_name = _ts["data_type"]["standard_name"]
             standards[_standard_name] = _ts["data_type"]
-            _name = f"{_platform['id']}"
+            _name = common.platform_display_name(_platform)
             if _ts["depth"]:
                 _name = _name + f" - {_ts['depth']}"
             platform_standards.setdefault(_standard_name, {})[_name] = _ts

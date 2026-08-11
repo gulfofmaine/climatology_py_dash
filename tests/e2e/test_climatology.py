@@ -10,10 +10,10 @@ def test_western_maine_shelf_air(page: Page) -> None:
     page.goto("/")
     page.get_by_role("navigation").get_by_role("link", name="Climatology").click()
     expect(page).to_have_url("/climatology/")
-    page.get_by_label("Platform").select_option("Western Maine Shelf")
+    page.get_by_label("Platform").select_option("B01 - Western Maine Shelf")
     page.get_by_label("Data Type").select_option("Air Temperature")
     expect(page).to_have_url(
-        "/climatology/?platform=Western+Maine+Shelf&ts=Air+Temperature",
+        "/climatology/?platform=B01+-+Western+Maine+Shelf&ts=Air+Temperature",
     )
 
     assert_chart_rendered(page)
@@ -24,7 +24,7 @@ def test_western_maine_shelf_air(page: Page) -> None:
 def test_monthly_averaging_period(page: Page) -> None:
     """Monthly used to die on `clim_df["Date"]` after that column was renamed
     to "Month", so the whole averaging period was unreachable."""
-    page.goto("/climatology/?platform=Western+Maine+Shelf&ts=Air+Temperature")
+    page.goto("/climatology/?platform=B01+-+Western+Maine+Shelf&ts=Air+Temperature")
     page.get_by_label("Averaging Time Period").select_option("Monthly")
 
     assert_chart_rendered(page)
