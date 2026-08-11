@@ -50,7 +50,7 @@ pytest-recording = ">=0.13,<1"
 # empty message. Keep both bounds identical, and see renovate.json for the
 # grouping that stops them being bumped apart.
 playwright = ">=1.62,<1.63"
-playwright-python = ">=1.61,<1.62"
+playwright-python = ">=1.62,<1.63"
 
 [tool.pixi.feature.test.tasks]
 unit = "pytest tests/unit"
