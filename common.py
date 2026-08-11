@@ -115,11 +115,18 @@ def load_platform_json(visibility: str | None = None):
         return platforms
 
 
+def platform_display_name(feature: dict) -> str:
+    """A platform's id, plus its station name when it has one, e.g. "A01 - Mass Bay"."""
+    station_name = feature["properties"]["station_name"]
+    if station_name:
+        return f"{feature['id']} - {station_name}"
+    return feature["id"]
+
+
 def platforms_by_name(platform_json: dict) -> dict:
-    """Platform features keyed by station name, falling back to id, sorted."""
+    """Platform features keyed by "id - station name" (or bare id), sorted."""
     platforms = {
-        feature["properties"]["station_name"] or feature["id"]: feature
-        for feature in platform_json["features"]
+        platform_display_name(feature): feature for feature in platform_json["features"]
     }
     return dict(sorted(platforms.items()))
 

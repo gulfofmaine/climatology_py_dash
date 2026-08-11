@@ -6,7 +6,9 @@ def test_western_maine_shelf(page: Page) -> None:
     page.goto("/")
     page.get_by_role("navigation").get_by_role("link", name="By Buoy").click()
     expect(page).to_have_url("/by_platform/")
-    page.get_by_test_id("marimo-plugin-dropdown").select_option("Western Maine Shelf")
+    page.get_by_test_id("marimo-plugin-dropdown").select_option(
+        "B01 - Western Maine Shelf",
+    )
     page.get_by_text("Select...").click()
     page.get_by_role("option", name="Air Temperature").click()
     page.get_by_role("option", name="Barometric Pressure").click()

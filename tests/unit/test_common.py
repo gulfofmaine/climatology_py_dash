@@ -83,9 +83,19 @@ def test_platforms_by_name_prefers_the_station_name_and_sorts():
 
     platforms = common.platforms_by_name(platform_json)
 
-    assert list(platforms) == ["44007", "Western Maine Shelf"]
+    assert list(platforms) == ["44005 - Western Maine Shelf", "44007"]
     assert platforms["44007"]["id"] == "44007"
-    assert platforms["Western Maine Shelf"]["id"] == "44005"
+    assert platforms["44005 - Western Maine Shelf"]["id"] == "44005"
+
+
+def test_platform_display_name_concatenates_id_and_station_name():
+    feature = {"id": "A01", "properties": {"station_name": "Mass Bay"}}
+    assert common.platform_display_name(feature) == "A01 - Mass Bay"
+
+
+def test_platform_display_name_falls_back_to_id_only():
+    feature = {"id": "44007", "properties": {"station_name": None}}
+    assert common.platform_display_name(feature) == "44007"
 
 
 def test_timeseries_by_name_sorts_and_records_the_app_name():
