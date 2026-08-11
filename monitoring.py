@@ -287,6 +287,18 @@ def tag_page(page: str) -> None:
     sentry_sdk.get_isolation_scope().set_tag("marimo.page", page)
 
 
+def tag_context(**tags: str) -> None:
+    """Tag every subsequent event from this kernel thread with arbitrary
+    page-specific context (e.g. the platform, dataset, or year a page is
+    currently showing). Like tag_page(), this persists on the thread's
+    isolation scope across cell reruns until overwritten -- call again
+    whenever a relevant value changes.
+    """
+    scope = sentry_sdk.get_isolation_scope()
+    for key, value in tags.items():
+        scope.set_tag(key, value)
+
+
 def _page_name() -> str:
     tagged = getattr(_page, "name", None)
     if tagged:

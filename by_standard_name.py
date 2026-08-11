@@ -138,8 +138,13 @@ def _(selected_ts_keys):
 
 
 @app.cell
-def _(platform_options, selected_ts_keys, unit):
+def _(platform_options, selected_ts_keys, standard_name_dropdown, unit):
     _wide_dfs = []
+
+    if standard_name_dropdown.value:
+        monitoring.tag_context(standard_name=standard_name_dropdown.value)
+    if selected_ts_keys.value:
+        monitoring.tag_context(platforms=",".join(sorted(selected_ts_keys.value)))
 
     try:
         with mo.status.spinner(title="Loading data from ERDDAP"):

@@ -175,6 +175,37 @@ def test_the_hook_never_raises_on_a_malformed_run_result(sentry_events):
     assert sentry_events == []
 
 
+# --- tag_context() ----------------------------------------------------------
+
+
+def test_tag_context_lands_on_a_later_cell_exception(sentry_events):
+    monitoring.tag_context(platform="B01", dataset="Air Temperature")
+    try:
+        msg = "boom"
+        raise ValueError(msg)
+    except ValueError as error:
+        monitoring._capture_cell_exception(FakeCell(), None, FakeRunResult(error))
+    sentry_sdk.flush()
+
+    assert len(sentry_events) == 1
+    tags = sentry_events[0]["tags"]
+    assert tags["platform"] == "B01"
+    assert tags["dataset"] == "Air Temperature"
+
+
+def test_tag_context_overwrites_a_previous_value_for_the_same_key(sentry_events):
+    monitoring.tag_context(year="2023")
+    monitoring.tag_context(year="2024")
+    try:
+        msg = "boom"
+        raise ValueError(msg)
+    except ValueError as error:
+        monitoring._capture_cell_exception(FakeCell(), None, FakeRunResult(error))
+    sentry_sdk.flush()
+
+    assert sentry_events[0]["tags"]["year"] == "2024"
+
+
 # --- report() ---------------------------------------------------------------
 
 
