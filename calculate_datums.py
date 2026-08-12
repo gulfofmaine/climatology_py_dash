@@ -92,6 +92,7 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
             kind="warning",
         ),
     )
+    monitoring.tag_context(dataset=dataset_id, qartod=str(use_qartod.value))
     e = erddapy.ERDDAP(
         server="https://data.neracoos.org/erddap",
         protocol="tabledap",

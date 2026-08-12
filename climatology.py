@@ -103,7 +103,7 @@ def _(platform):
 
 
 @app.cell
-def _(timeseries_dropdown):
+def _(platform, timeseries_dropdown):
     ts = timeseries_dropdown.value
     if ts is None:
         mo.stop(
@@ -114,6 +114,7 @@ def _(timeseries_dropdown):
                 kind="warning",
             ),
         )
+    monitoring.tag_context(platform=platform["id"], dataset=ts["app_name"])
     return (ts,)
 
 
@@ -140,6 +141,15 @@ def _(df_all):
     df_no_index = df_all.reset_index()
     df_no_index = df_no_index.rename({"time (UTC)": core.TIME_COLUMN}, axis=1)
     column = df_all.columns[0]
+    if df_no_index.empty:
+        mo.stop(
+            True,
+            common.admonition(
+                "",
+                title="No data available for the selected platform and data type",
+                kind="warning",
+            ),
+        )
     return column, df_no_index
 
 
@@ -210,7 +220,13 @@ def _(query_params):
 
 
 @app.cell
-def _(average_period_dropdown, end_year_dropdown, start_year_dropdown):
+def _(average_period_dropdown, end_year_dropdown, start_year_dropdown, year_dropdown):
+    monitoring.tag_context(
+        year=year_dropdown.value,
+        clim_start=start_year_dropdown.value,
+        clim_end=end_year_dropdown.value,
+        avg_period=average_period_dropdown.value,
+    )
     mo.hstack([start_year_dropdown, end_year_dropdown, average_period_dropdown])
 
 

@@ -74,9 +74,18 @@ def _(platform_selector, time_series_selector):
 
 
 @app.cell
-def _(time_series_selector):
+def _(platform_selector, time_series_selector):
     loaded_ts = {}
     unit_ts = {}
+
+    if platform_selector.value:
+        monitoring.tag_context(platform=platform_selector.value["id"])
+    if time_series_selector.value:
+        monitoring.tag_context(
+            timeseries=",".join(
+                sorted(common.name_for_ts(_ts) for _ts in time_series_selector.value),
+            ),
+        )
 
     with mo.status.spinner(title="Loading data from ERDDAP"):
         for _ts in time_series_selector.value:
