@@ -118,11 +118,20 @@ def _assert_chart_fits_wrapper(chart: Locator) -> None:
 
 
 def assert_hover_tooltip_appears(page: Page) -> None:
-    """Move the mouse over the settled chart and confirm a tooltip shows.
+    """Move the mouse over the settled chart and confirm a tooltip shows."""
+    hover_for_tooltip(page)
+
+
+def hover_for_tooltip(page: Page) -> Locator:
+    """Move the mouse over the settled chart until a tooltip shows, and return it.
 
     by_platform.py stacks one subplot per unit in a single canvas, so the
     exact vertical center can land in the gap between rows rather than on
     either plot -- try a few y positions rather than only the center.
+
+    Returned rather than merely asserted so a caller can read what the tooltip
+    says: the chart itself is a canvas, so its axis titles are invisible to the
+    DOM and the tooltip is the only place a unit is assertable.
     """
     chart = wait_for_chart_settled(page)
     box = chart.bounding_box()
@@ -138,9 +147,10 @@ def assert_hover_tooltip_appears(page: Page) -> None:
         )
         page.wait_for_timeout(300)
         if tooltip.is_visible():
-            return
+            return tooltip
 
     expect(tooltip).to_be_visible()
+    return tooltip
 
 
 def download_chart_png(page: Page) -> Download:
