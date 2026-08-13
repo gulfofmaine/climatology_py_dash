@@ -362,6 +362,91 @@ def neracoos_logo(
     )
 
 
+def linked_hover(
+    line: alt.Chart,
+    hit_data: pd.DataFrame,
+    x_field: str,
+    value_fields: list[tuple[str, str]],
+    *,
+    hover: alt.Parameter | None = None,
+) -> tuple[alt.LayerChart, alt.Parameter]:
+    """Layer a nearest-``x_field`` crosshair and tooltip onto ``line``.
+
+    ``line`` must already carry every encoding (and, for one row of a vconcat
+    stack, any ``transform_filter``) the caller wants on the finished chart --
+    this only adds a highlighted-point layer on top of it, plus two new marks
+    built from ``hit_data``: an invisible dense ``mark_point`` that is what
+    actually listens for ``pointerover`` and carries the tooltip, and a dashed
+    ``mark_rule`` crosshair.
+
+    ``hit_data`` is deliberately a separate frame from whatever ``line`` draws
+    from -- pass a *wide* one, with a row per ``x_field`` value and a column
+    per series, so the tooltip can report every series at that instant
+    together, rather than whichever of ``line``'s own (possibly several,
+    same-x) marks happens to be topmost under the cursor. This mirrors the
+    "layers merge from one frame so a hover reports every series" fix
+    documented in climatology.py's ``clim_tooltip``/``df_plot`` cells, applied
+    to a hover selection instead of a static layer stack.
+
+    ``value_fields`` is a list of ``(field, title)`` pairs, one per series in
+    ``hit_data``, each formatted to two decimal places -- or "No data" where
+    that series has no reading at the hovered instant (e.g. one sensor in a
+    group is mid-outage while the others aren't), rather than a raw NaN.
+
+    Reuse the same ``hover`` object across multiple calls -- e.g. once per row
+    of a vconcat stack -- to link them: Vega-Lite resolves a same-named
+    selection used in more than one view into a single shared instance, so a
+    hover anywhere updates every row that references it. Every row still needs
+    its own call (each is a separate view, and only marks with their own
+    ``.add_params()`` registration in that view raise events into the shared
+    selection) -- Altair deduplicates the repeated registration itself rather
+    than emitting more than one Vega param, so this is safe; it does print a
+    benign ``UserWarning`` ("Automatically deduplicated selection
+    parameter...") once per repeat call, which is expected and can be
+    ignored.
+
+    Leave ``hover`` unset for a single, self-contained chart with no linking.
+
+    Returns the composed layer and the ``hover`` selection, so a caller
+    building several linked rows threads it through:
+    ``row, hover = linked_hover(line, wide_row_df, "time (UTC)", value_fields, hover=hover)``.
+    """
+    hover = hover or alt.selection_point(
+        name="nearest_x",
+        fields=[x_field],
+        nearest=True,
+        on="pointerover",
+        empty=False,
+    )
+    _hit_base = alt.Chart(hit_data)
+    _formatted_fields = {
+        f"{field}__fmt": f"isValid(datum['{field}']) ? format(datum['{field}'], '.2f') : 'No data'"
+        for field, _title in value_fields
+    }
+    _tooltip = [
+        alt.Tooltip(field=x_field, type="temporal"),
+        *(
+            alt.Tooltip(field=f"{field}__fmt", type="nominal", title=title)
+            for field, title in value_fields
+        ),
+    ]
+    hit = (
+        _hit_base.transform_calculate(**_formatted_fields)
+        .mark_point()
+        .encode(x=f"{x_field}:T", opacity=alt.value(0), tooltip=_tooltip)
+        .add_params(hover)
+    )
+    rule = (
+        _hit_base.mark_rule(color="gray", strokeDash=[4, 4])
+        .encode(x=f"{x_field}:T")
+        .transform_filter(hover)
+    )
+    points = line.mark_point(size=50).encode(
+        opacity=alt.condition(hover, alt.value(1), alt.value(0)),
+    )
+    return alt.layer(line, points, rule, hit), hover
+
+
 def sidebar_menu():
     """Build a sidebar menu"""
     return mo.sidebar(

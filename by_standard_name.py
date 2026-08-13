@@ -241,12 +241,39 @@ def _(filtered_df, standard_name_dropdown, standards, unit):
         filtered_df.index.max(),
         standards[standard_name_dropdown.value]["long_name"],
     )
-
     _chart = (
         alt.Chart(filtered_df.reset_index())
         .mark_line()
         .encode(x="time (UTC):T", y=f"{unit}:Q", color="Timeseries")
     )
+
+    # A wide (one column per platform) frame for the tooltip, so hovering
+    # reports every selected buoy's value at that instant in one tooltip box
+    # instead of whichever platform's melted-frame row is topmost -- same
+    # trick as climatology.py's clim_tooltip/df_plot, and as by_platform.py's
+    # per-row _hit_df.
+    try:
+        # pivot(), not pivot_table(): duplicate (time, Timeseries) pairs
+        # should raise so the except branch below can catch them, rather
+        # than pivot_table()'s default of silently averaging them together.
+        _hit_df = (
+            filtered_df.reset_index()  # noqa: PD010
+            .pivot(index="time (UTC)", columns="Timeseries", values=unit)
+            .reset_index()
+        )
+        _value_fields = [
+            (_col, f"{_col} ({unit})")
+            for _col in _hit_df.columns
+            if _col != "time (UTC)"
+        ]
+    except ValueError:
+        # Duplicate (time, Timeseries) pairs after resampling -- shouldn't
+        # happen given resample_to_budget(..., by="Timeseries")'s groupby,
+        # but fall back to one series per tooltip rather than crash.
+        _hit_df = filtered_df.reset_index()
+        _value_fields = [(unit, unit)]
+
+    _chart, _ = common.linked_hover(_chart, _hit_df, "time (UTC)", _value_fields)
     _chart = _chart.properties(width="container")
 
     mo.ui.altair_chart(_chart + _logo)
