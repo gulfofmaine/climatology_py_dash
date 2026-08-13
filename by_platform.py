@@ -40,7 +40,7 @@ def _():
 
 @app.cell
 def _(platform_json):
-    platforms = common.platforms_by_name(platform_json)
+    platforms = common.platforms_with_readings(common.platforms_by_name(platform_json))
     return (platforms,)
 
 

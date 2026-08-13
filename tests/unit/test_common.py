@@ -94,6 +94,47 @@ def test_platform_display_name_concatenates_id_and_station_name():
     assert common.platform_display_name(feature) == "A01 - Mass Bay"
 
 
+def test_platforms_with_readings_keeps_a_platform_that_has_readings():
+    platforms = {
+        "44005 - Western Maine Shelf": {
+            "id": "44005",
+            "properties": {"readings": [reading("Air Temperature")]},
+        },
+    }
+
+    result = common.platforms_with_readings(platforms)
+
+    assert list(result) == ["44005 - Western Maine Shelf"]
+
+
+def test_platforms_with_readings_drops_a_platform_with_no_readings():
+    platforms = {
+        "44007": {"id": "44007", "properties": {"readings": []}},
+    }
+
+    result = common.platforms_with_readings(platforms)
+
+    assert result == {}
+
+
+def test_platforms_with_readings_preserves_order_of_survivors():
+    platforms = {
+        "44005 - Western Maine Shelf": {
+            "id": "44005",
+            "properties": {"readings": [reading("Air Temperature")]},
+        },
+        "44007": {"id": "44007", "properties": {"readings": []}},
+        "A01 - Mass Bay": {
+            "id": "A01",
+            "properties": {"readings": [reading("Water Temperature", depth=1.0)]},
+        },
+    }
+
+    result = common.platforms_with_readings(platforms)
+
+    assert list(result) == ["44005 - Western Maine Shelf", "A01 - Mass Bay"]
+
+
 def test_platform_display_name_falls_back_to_id_only():
     feature = {"id": "44007", "properties": {"station_name": None}}
     assert common.platform_display_name(feature) == "44007"
