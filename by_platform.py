@@ -190,7 +190,20 @@ def _(filtered_df, platform_selector, unit_ts):
 
     _base = alt.Chart(melted_df).mark_line().properties(height=300)
 
+    # One wide (one column per series, every unit included) hit frame shared
+    # by every row, so hovering any single row's crosshair reports every
+    # selected series' value at that instant -- not just the values for the
+    # unit being hovered. filtered_df is already this shape: one column per
+    # loaded timeseries, whatever its unit.
+    _unit_for_key = {
+        _ts_key: _unit for _unit, _ts_keys in unit_ts.items() for _ts_key in _ts_keys
+    }
+    _all_ts_keys = list(_unit_for_key)
+    _hit_df = filtered_df[_all_ts_keys].reset_index()
+    _value_fields = [(_col, f"{_col} ({_unit_for_key[_col]})") for _col in _all_ts_keys]
+
     stack = alt.vconcat()
+    _nearest_time = None
     for i, (_unit, _ts_keys) in enumerate(unit_ts.items()):
         # Every subplot draws from the one melted frame, so without the filter
         # each takes its colour domain from all of the series -- listing the
@@ -200,10 +213,34 @@ def _(filtered_df, platform_selector, unit_ts):
             y=f"{_unit}:Q",
             color="variable",
         ).transform_filter(alt.FieldOneOfPredicate(field="variable", oneOf=_ts_keys))
+
+        # Threading _nearest_time through every row links them: the same
+        # Vega-Lite selection reused across multiple views resolves to one
+        # shared instance, so hovering any row moves the crosshair -- and
+        # shows every series' value at that instant, not just this row's
+        # own -- in every row at once. See common.linked_hover()'s docstring
+        # for why calling .add_params() again in every row is required (each
+        # vconcat row is a separate view) and safe (Altair deduplicates the
+        # repeated registration rather than emitting a second Vega param).
+        _row, _nearest_time = common.linked_hover(
+            _row,
+            _hit_df,
+            "time (UTC)",
+            _value_fields,
+            hover=_nearest_time,
+        )
+
         if i == 0:
-            _row = _row + common.neracoos_logo(
-                filtered_df.index.max(),
-                platform_selector.value["id"],
+            # Logo goes *under* the hover layers (added first, not last): its
+            # mark_image uses clip=False, and as the topmost layer it was
+            # intercepting pointerover events across the whole row, silently
+            # breaking the invisible hit target underneath it.
+            _row = (
+                common.neracoos_logo(
+                    filtered_df.index.max(),
+                    platform_selector.value["id"],
+                )
+                + _row
             )
         stack &= _row.properties(width="container")
 
