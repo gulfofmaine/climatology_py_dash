@@ -368,7 +368,7 @@ def install_marimo_hook() -> bool:
             raise TypeError(msg)
         if _capture_cell_exception not in hooks:
             hooks.append(_capture_cell_exception)
-    except Exception:
+    except Exception:  # noqa: BLE001
         sentry_sdk.capture_message(
             "marimo's POST_EXECUTION_HOOKS is not where monitoring.py expects "
             "it; notebook cell errors are NOT being reported",
@@ -392,7 +392,7 @@ def _capture_cell_exception(cell: Any, _ctx: Any, run_result: Any) -> None:
             scope.set_tag("marimo.page", _page_name())
             scope.set_tag("marimo.cell_id", str(getattr(cell, "cell_id", "?")))
             sentry_sdk.capture_exception(exc)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return  # monitoring must never break a notebook
 
 
