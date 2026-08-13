@@ -186,6 +186,20 @@ def query_param_int(query_params, key, *, fallback, minimum=0, maximum=None):
     return int(result)
 
 
+def query_param_list_default(query_params, key: str, options, *, fallback):
+    """Comma-separated query parameter values that are valid options, else ``fallback``.
+
+    Mirrors query_param_default for multi-value widgets like mo.ui.multiselect:
+    any stored entry no longer among options (e.g. left over from a different
+    platform's timeseries names) is dropped rather than passed through.
+    """
+    value = query_params.get(key)
+    if not value:
+        return fallback
+    selected = [item for item in value.split(",") if item in options]
+    return selected or fallback
+
+
 def erddap_client(ts: dict):
     """A configured erddapy client for a Buoy Barn timeseries."""
     import erddapy
