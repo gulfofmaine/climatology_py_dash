@@ -112,7 +112,7 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
     ):
         try:
             df = e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             # This is a raw erddapy load with no ErddapLoadError wrapper,
             # unlike common.load_ts_from_erddap -- report it directly, since
             # it otherwise never reaches Sentry. Stop rather than appending:
@@ -176,7 +176,7 @@ def _(common, df_reset, latitude, longitude, mo, monitoring, tadc):
                 Subordinate_Lat=latitude,
                 Subordinate_Lon=longitude,
             )
-        except Exception as error:
+        except Exception as error:  # noqa: BLE001
             # tadc is a third-party numerical library running on
             # user-selected data -- exactly the kind of failure we want
             # visibility into. Reported from inside the operation() span (not

@@ -381,7 +381,9 @@ def test_html_head_options_round_trip(monkeypatch):
     monkeypatch.setenv("SENTRY_RELEASE", "abc123")
 
     head = monitoring.html_head()
-    options = json.loads(re.search(r"var options = (\{.*?\});", head, re.S).group(1))
+    options = json.loads(
+        re.search(r"var options = (\{.*?\});", head, re.DOTALL).group(1),
+    )
 
     assert options["environment"] == "test"
     assert options["release"] == "abc123"
@@ -396,7 +398,9 @@ def test_html_head_omits_environment_and_release_when_unset(monkeypatch):
     monkeypatch.delenv("SENTRY_RELEASE", raising=False)
 
     head = monitoring.html_head()
-    options = json.loads(re.search(r"var options = (\{.*?\});", head, re.S).group(1))
+    options = json.loads(
+        re.search(r"var options = (\{.*?\});", head, re.DOTALL).group(1),
+    )
 
     assert "environment" not in options
     assert "release" not in options
