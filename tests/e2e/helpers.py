@@ -67,6 +67,55 @@ def assert_chart_rendered(page: Page, *, min_width: int = MIN_CHART_WIDTH) -> No
         f"chart width {box['width']} <= {min_width}; expected a full-width chart"
     )
 
+    _assert_chart_fits_wrapper(chart)
+
+
+def _assert_chart_fits_wrapper(chart: Locator) -> None:
+    """Assert the settled canvas is no wider than the wrapper that scrolls it.
+
+    "Fills its container" has to mean *fills*, not *overflows*. Vega-Lite only
+    compiles width="container" into an autosize: fit-x for single and layered
+    views, so a vconcat sized that way makes each row's plotting area the full
+    container width and lets the axes, legend and padding spill ~190px past it
+    -- cropping the chart's right edge (#162). Nothing else here catches that:
+    the min_width check above only gets wider when the canvas overflows.
+
+    Measure against div.chart-wrapper, the overflow-x: auto element vega-embed
+    wraps the canvas in, since that is what does the cropping. scrollWidth
+    exceeding clientWidth is the direct statement of "this wrapper is scrolling
+    because its content does not fit".
+    """
+    # The canvas lives in a shadow root, so document.querySelector() inside the
+    # page never finds it -- hand the element Playwright already pierced to
+    # evaluate() as an argument instead of re-querying from document.
+    measured = chart.evaluate(
+        """(canvas) => {
+            const wrapper = canvas.closest(".chart-wrapper");
+            if (!wrapper) return null;
+            return {
+                canvas: canvas.getBoundingClientRect().width,
+                clientWidth: wrapper.clientWidth,
+                scrollWidth: wrapper.scrollWidth,
+            };
+        }""",
+    )
+    assert measured is not None, (
+        "chart canvas has no .chart-wrapper ancestor; vega-embed's DOM shape "
+        "changed and this assertion needs updating"
+    )
+
+    # A pixel of slack: widths are fractional and clientWidth is rounded.
+    slack = 2
+    assert measured["canvas"] <= measured["clientWidth"] + slack, (
+        f"chart canvas is {measured['canvas']}px wide but its .chart-wrapper is "
+        f"only {measured['clientWidth']}px; the chart is overflowing and its "
+        f"right edge is cropped"
+    )
+    assert measured["scrollWidth"] <= measured["clientWidth"] + slack, (
+        f".chart-wrapper scrollWidth {measured['scrollWidth']}px exceeds its "
+        f"clientWidth {measured['clientWidth']}px; chart content overflows it"
+    )
+
 
 def assert_hover_tooltip_appears(page: Page) -> None:
     """Move the mouse over the settled chart and confirm a tooltip shows.
