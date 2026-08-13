@@ -131,6 +131,19 @@ def platforms_by_name(platform_json: dict) -> dict:
     return dict(sorted(platforms.items()))
 
 
+def platforms_with_readings(platforms: dict) -> dict:
+    """``platforms`` narrowed to those with at least one reading to plot.
+
+    A platform with an empty ``readings`` array is a dead end for any page
+    here that lets you pick a timeseries next -- there's nothing to select.
+    """
+    return {
+        name: feature
+        for name, feature in platforms.items()
+        if feature["properties"]["readings"]
+    }
+
+
 def name_for_ts(ts: dict) -> str:
     """Label for a timeseries: its long name, plus the depth when it has one."""
     name = ts["data_type"]["long_name"]
