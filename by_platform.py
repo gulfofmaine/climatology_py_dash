@@ -268,8 +268,35 @@ def _(filtered_df, platform_selector, unit_ts):
             )
         stack &= _row.properties(width="container")
 
+    # The rows' width="container" is only half of responsive sizing, and the
+    # autosize below is the other half. Vega-Lite derives an
+    # autosize: fit-x from width="container" for single and layered views, but
+    # never for a vconcat -- it warns "Width 'container' only works for single
+    # views and layered views" and compiles no autosize at all. Without it,
+    # width="container" sizes each row's *plotting area* to the full container
+    # width and the y-axis labels, legend and padding then push the canvas
+    # ~190px past it: the canvas overflows div.chart-wrapper (overflow-x:
+    # auto), which crops the logo and hides the colour legend entirely (#162).
+    #
+    # fit-x, not fit: Vega-Lite silently downgrades autosize fit to pad for
+    # concat views, which puts the overflow straight back.
+    #
+    # The width="container" here is *not* redundant with the rows', and not
+    # dead weight either, despite being schema-invalid on a VConcatChart
+    # ("VConcatChart has no parameter named 'width'") and surviving only
+    # because mo.ui.altair_chart serializes with to_dict(validate=False).
+    # marimo's frontend attaches its container ResizeObserver only when the
+    # *top-level* spec width is "container"; that observer is what dispatches
+    # the window:resize the compiled width signal listens for when the
+    # container changes width without the window doing so -- collapsing the
+    # sidebar being the case that happens. Drop it and the canvas stays frozen
+    # at its old width in a wider wrapper (measured: 752px canvas, 972px
+    # wrapper) until an actual window resize comes along.
     mo.ui.altair_chart(
-        stack.properties(width="container"),
+        stack.properties(
+            width="container",
+            autosize=alt.AutoSizeParams(type="fit-x", contains="padding"),
+        ),
         chart_selection=False,
         legend_selection=False,
     )
