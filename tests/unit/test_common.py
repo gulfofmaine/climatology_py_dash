@@ -138,6 +138,59 @@ def test_query_param_default_falls_back_when_unset():
     assert common.query_param_default(FakeQueryParams(), "year", ["2024"]) is None
 
 
+def test_query_param_list_default_accepts_comma_separated_values_that_are_options():
+    params = FakeQueryParams(ts="Air Temperature,Water Temperature")
+
+    assert common.query_param_list_default(
+        params,
+        "ts",
+        ["Air Temperature", "Water Temperature", "Wind Speed"],
+        fallback=[],
+    ) == ["Air Temperature", "Water Temperature"]
+
+
+def test_query_param_list_default_drops_entries_left_over_from_another_platform():
+    params = FakeQueryParams(ts="Air Temperature,Water Temperature @ 50.0m")
+
+    assert common.query_param_list_default(
+        params,
+        "ts",
+        ["Air Temperature"],
+        fallback=[],
+    ) == ["Air Temperature"]
+
+
+def test_query_param_list_default_falls_back_when_unset():
+    assert common.query_param_list_default(
+        FakeQueryParams(),
+        "ts",
+        ["Air Temperature"],
+        fallback=["fell"],
+    ) == ["fell"]
+
+
+def test_query_param_list_default_falls_back_when_empty_string():
+    params = FakeQueryParams(ts="")
+
+    assert common.query_param_list_default(
+        params,
+        "ts",
+        ["Air Temperature"],
+        fallback=["fell"],
+    ) == ["fell"]
+
+
+def test_query_param_list_default_falls_back_when_every_entry_is_invalid():
+    params = FakeQueryParams(ts="Water Temperature @ 50.0m")
+
+    assert common.query_param_list_default(
+        params,
+        "ts",
+        ["Air Temperature"],
+        fallback=["fell"],
+    ) == ["fell"]
+
+
 def test_query_param_int_accepts_a_valid_stored_value():
     params = FakeQueryParams(threshold_daily="5")
 

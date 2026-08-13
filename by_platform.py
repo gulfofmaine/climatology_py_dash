@@ -45,10 +45,24 @@ def _(platform_json):
 
 
 @app.cell
-def _(platforms):
+def _():
+    query_params = mo.query_params()
+    return (query_params,)
+
+
+@app.cell
+def _(platforms, query_params):
+    _ids_to_names = {feature["id"]: name for name, feature in platforms.items()}
+    _default_name = _ids_to_names.get(query_params.get("platform"))
+
     platform_selector = mo.ui.dropdown(
         platforms,
         label="Select platform",
+        value=_default_name,
+        on_change=lambda value: query_params.set(
+            "platform",
+            value["id"] if value else None,
+        ),
     )
     return (platform_selector,)
 
@@ -60,10 +74,20 @@ def _(platform_selector):
 
 
 @app.cell
-def _(platform_time_series):
+def _(platform_time_series, query_params):
     time_series_selector = mo.ui.multiselect(
         platform_time_series,
         label="Select time series",
+        value=common.query_param_list_default(
+            query_params,
+            "ts",
+            platform_time_series,
+            fallback=[],
+        ),
+        on_change=lambda value: query_params.set(
+            "ts",
+            ",".join(v["app_name"] for v in value),
+        ),
     )
     return (time_series_selector,)
 

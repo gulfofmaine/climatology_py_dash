@@ -92,13 +92,20 @@ def _(platform_standards, query_params, standards):
 
 
 @app.cell
-def _(platform_standards, standard_name_dropdown):
+def _(platform_standards, query_params, standard_name_dropdown):
     try:
         platform_options = platform_standards[standard_name_dropdown.value]
         selected_ts_keys = mo.ui.multiselect(
             sorted(platform_options.keys()),
             label="Platforms",
             max_selections=10,
+            value=common.query_param_list_default(
+                query_params,
+                "platforms",
+                platform_options,
+                fallback=[],
+            ),
+            on_change=lambda value: query_params.set("platforms", ",".join(value)),
         )
     except KeyError:
         selected_ts_keys = None
