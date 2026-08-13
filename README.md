@@ -11,6 +11,20 @@ app framework to allow rapid iteration and then a Streamlit-like experience.
 - `pixi run edit` - Opens Marimo notebooks in the browser for editing.
 - `pixi run app` - Runs the app in the browser in a non-editable mode.
 
+## Display units
+
+By Buoy, By Data Type and Climatology show English units by default, with a
+Metric toggle at the foot of the sidebar. The conversion table lives in
+`units.py`, keyed on CF standard name and driven by the unit string Buoy Barn
+reports for each reading. A standard name it does not know about is passed
+through in whatever unit it arrived in. Barometric pressure is mb in both
+systems.
+
+The choice is stored in the `?units=` query-param, so a shared link keeps the
+units its sender saw, and is remembered in `localStorage` between pages and
+sessions (`units.head_script()`, injected into every page's `<head>` by
+`app.py`). An explicit `?units=` in the URL wins over the remembered one.
+
 ## End-to-end tests
 
 - `pixi run -e test e2e-install` - Downloads the Chromium browser for Playwright
