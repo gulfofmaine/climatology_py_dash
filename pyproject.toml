@@ -107,7 +107,7 @@ args = [
 ]
 cmd = """\
   granian --interface asgi --host {{ host }} --port {{ port }} --access-log --static-path-route /static \
-  --static-path-mount public app:app\
+  --static-path-mount public app:app --workers-kill-timeout 5\
   """
 description = "Serve the app on the given host and port, with /static routed to public/."
 
