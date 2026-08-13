@@ -281,3 +281,29 @@ LABEL_CASES = [
 @pytest.mark.parametrize(("unit", "expected"), LABEL_CASES)
 def test_label(unit, expected):
     assert units.label(unit) == expected
+
+
+def test_head_script_is_a_self_contained_script_tag():
+    script = units.head_script()
+
+    assert script.startswith("<script>")
+    assert script.rstrip().endswith("</script>")
+    # Nothing third-party: the whole point of localStorage over a cookie is
+    # that the preference never leaves the browser.
+    assert "http://" not in script
+    assert "https://" not in script
+
+
+@pytest.mark.parametrize("system", [units.ENGLISH, units.METRIC])
+def test_head_script_allows_both_unit_systems(system):
+    assert f'"{system}"' in units.head_script()
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/by_platform", "/by_standard_name", "/climatology"],
+)
+def test_head_script_seeds_the_pages_that_have_a_toggle(path):
+    """Root and the datum calculator have no toggle, so no ?units= is seeded
+    onto their URLs."""
+    assert f'"{path}"' in units.head_script()

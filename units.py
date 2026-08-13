@@ -13,6 +13,9 @@ so a newly flagged variable is already handled rather than silently falling
 back to passthrough the day it first appears.
 """
 
+import json
+from string import Template
+
 import pint
 
 import monitoring
@@ -81,6 +84,95 @@ TARGETS: dict[str, tuple[str, str]] = {
 # pressure family's target is literally the string "mbar" in TARGETS above,
 # regardless of which of the two the source happened to be.
 _LABEL_OVERRIDES = {"mbar": "mb"}
+
+
+# Pages that carry the sidebar toggle. The <head> snippet below is injected
+# into every notebook, root and the datum calculator included, and neither of
+# those has a unit preference to restore -- seeding one onto their URL would
+# just be a meaningless query string the user is left looking at.
+_TOGGLE_PATHS = ("/by_platform", "/by_standard_name", "/climatology")
+
+# Runs before marimo's own (deferred, module) bundle, so the URL is already
+# seeded by the time marimo reads its query parameters.
+#
+# ?units= stays the single source of truth: an explicit one in the URL always
+# wins over the stored preference, so a shared link keeps meaning what its
+# sender saw. localStorage rather than a cookie -- this is a first-party
+# display preference and the server has no use for it.
+_HEAD_SCRIPT = Template("""<script>
+(function () {
+  var KEY = "neracoos-units";
+  var PARAM = "units";
+  var ALLOWED = $systems;
+  var PATHS = $paths;
+
+  function stored() {
+    try {
+      var value = window.localStorage.getItem(KEY);
+      return ALLOWED.indexOf(value) === -1 ? null : value;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  function persist() {
+    var value = new URLSearchParams(window.location.search).get(PARAM);
+    if (ALLOWED.indexOf(value) === -1) return;
+    try {
+      window.localStorage.setItem(KEY, value);
+    } catch (error) {
+      /* Private browsing refuses writes; the toggle still works per-tab. */
+    }
+  }
+
+  function onToggledPage() {
+    return PATHS.some(function (path) {
+      return window.location.pathname.indexOf(path) === 0;
+    });
+  }
+
+  var params = new URLSearchParams(window.location.search);
+  if (onToggledPage() && !params.has(PARAM)) {
+    var value = stored();
+    if (value) {
+      params.set(PARAM, value);
+      history.replaceState(
+        history.state,
+        "",
+        window.location.pathname + "?" + params.toString() + window.location.hash
+      );
+    }
+  }
+
+  /* The History API fires no event for its own calls, and marimo writes the
+     toggle back through it, so the only way to notice is to wrap them. */
+  ["pushState", "replaceState"].forEach(function (name) {
+    var original = history[name];
+    history[name] = function () {
+      var result = original.apply(this, arguments);
+      persist();
+      return result;
+    };
+  });
+  window.addEventListener("popstate", persist);
+  persist();
+})();
+</script>
+""")
+
+
+def head_script() -> str:
+    """The <head> snippet for ``marimo.create_asgi_app(html_head=...)``.
+
+    Carries the unit preference across pages and sessions in ``localStorage``,
+    seeding ``?units=`` onto the URL of a page that has the toggle before
+    marimo reads its query parameters, and writing back whatever the toggle
+    later sets.
+    """
+    return _HEAD_SCRIPT.substitute(
+        systems=json.dumps([ENGLISH, METRIC]),
+        paths=json.dumps(list(_TOGGLE_PATHS)),
+    )
 
 
 def target_unit(standard_name: str, source: str, system: str) -> str:

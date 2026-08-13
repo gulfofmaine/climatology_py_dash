@@ -10,6 +10,7 @@ import pytest
 import sentry_sdk
 
 import common
+import units
 
 TIME_INDEX = "time (UTC)"
 
@@ -177,6 +178,26 @@ def test_query_param_default_rejects_a_value_left_over_from_another_platform():
 
 def test_query_param_default_falls_back_when_unset():
     assert common.query_param_default(FakeQueryParams(), "year", ["2024"]) is None
+
+
+def test_units_radio_defaults_to_english():
+    assert common.units_radio(FakeQueryParams()).value == units.ENGLISH
+
+
+def test_units_radio_restores_the_query_parameter():
+    assert common.units_radio(FakeQueryParams(units="Metric")).value == units.METRIC
+
+
+def test_units_radio_ignores_a_unit_system_it_does_not_offer():
+    params = FakeQueryParams(units="Imperial")
+
+    assert common.units_radio(params).value == units.ENGLISH
+
+
+def test_sidebar_menu_renders_with_and_without_the_toggle():
+    """Root and the datum calculator call it bare; the three viz pages don't."""
+    assert common.sidebar_menu() is not None
+    assert common.sidebar_menu(common.units_radio(FakeQueryParams())) is not None
 
 
 def test_query_param_list_default_accepts_comma_separated_values_that_are_options():
