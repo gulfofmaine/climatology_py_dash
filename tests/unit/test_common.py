@@ -4,6 +4,7 @@ The tests that reach ERDDAP or Buoy Barn are recorded with pytest-recording, see
 conftest.py.
 """
 
+import altair as alt
 import pandas as pd
 import pytest
 import sentry_sdk
@@ -402,6 +403,82 @@ def test_admonition_embeds_a_valid_sentry_event_id():
     ).text
 
     assert 'data-sentry-event-id="4a99b1f0c54b4b248939e08c6485e90d"' in rendered
+
+
+def hover_frame() -> pd.DataFrame:
+    """A frame shaped like the melted/reset frames the two chart pages hover over."""
+    return pd.DataFrame(
+        {
+            TIME_INDEX: pd.date_range("2024-01-01", periods=5, freq="D"),
+            "value": [1, 2, 3, 4, 5],
+        },
+    )
+
+
+def test_linked_hover_returns_a_layer_chart():
+    df = hover_frame()
+    line = alt.Chart(df).mark_line().encode(x=f"{TIME_INDEX}:T", y="value:Q")
+
+    layer, hover = common.linked_hover(
+        line,
+        df,
+        TIME_INDEX,
+        [("value", "Value")],
+    )
+
+    assert isinstance(layer, alt.LayerChart)
+    assert isinstance(hover, alt.Parameter)
+
+
+def test_linked_hover_formats_missing_values_as_no_data():
+    """A NaN reading shows as "No data" in the tooltip, not a raw NaN.
+
+    A hover can land on a timestamp where one series in a group has no
+    reading (e.g. a sensor outage) while others do -- see by_platform.py's
+    per-row hit frame, which can have NaN in any of its series columns.
+    """
+    df = hover_frame()
+    line = alt.Chart(df).mark_line().encode(x=f"{TIME_INDEX}:T", y="value:Q")
+
+    layer, _hover = common.linked_hover(line, df, TIME_INDEX, [("value", "Value")])
+
+    calculates = [
+        step["calculate"]
+        for entry in layer.to_dict()["layer"]
+        for step in entry.get("transform", [])
+        if "calculate" in step
+    ]
+    assert len(calculates) == 1
+    assert "isValid" in calculates[0]
+    assert "No data" in calculates[0]
+
+
+def test_linked_hover_reused_across_rows_yields_one_shared_param():
+    """Threading the same ``hover`` param through two rows shares one Vega param.
+
+    by_platform.py builds one vconcat row per unit and threads the same
+    selection through ``common.linked_hover()`` for each -- Vega-Lite should
+    resolve that into exactly one top-level param, not one copy per row. If a
+    future change built a fresh selection per row instead, this would start
+    failing with more than one entry in ``params``.
+    """
+    df = hover_frame()
+    line = alt.Chart(df).mark_line().encode(x=f"{TIME_INDEX}:T", y="value:Q")
+    value_fields = [("value", "Value")]
+
+    row0, hover = common.linked_hover(line, df, TIME_INDEX, value_fields)
+    row1, hover = common.linked_hover(line, df, TIME_INDEX, value_fields, hover=hover)
+
+    # Reusing the same hover param across rows is the whole point (see
+    # linked_hover()'s docstring) -- Altair's dedup warning fires here, when
+    # the rows are composed together, and is expected rather than a sign
+    # something's wrong.
+    with pytest.warns(UserWarning, match="Automatically deduplicated"):
+        spec = alt.vconcat(row0, row1).to_dict()
+
+    assert len(spec["params"]) == 1
+    assert "params" not in spec["vconcat"][0]
+    assert "params" not in spec["vconcat"][1]
 
 
 @pytest.mark.parametrize(

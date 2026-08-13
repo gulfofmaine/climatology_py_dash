@@ -1,4 +1,8 @@
-from helpers import assert_chart_rendered, download_chart_png
+from helpers import (
+    assert_chart_rendered,
+    assert_hover_tooltip_appears,
+    download_chart_png,
+)
 from playwright.sync_api import Page, expect
 
 
@@ -15,6 +19,7 @@ def test_western_maine_shelf(page: Page) -> None:
     page.get_by_text("Resampled to weekly means for").click()
 
     assert_chart_rendered(page)
+    assert_hover_tooltip_appears(page)
 
     assert download_chart_png(page).suggested_filename.endswith(".png")
 

@@ -68,6 +68,32 @@ def assert_chart_rendered(page: Page, *, min_width: int = MIN_CHART_WIDTH) -> No
     )
 
 
+def assert_hover_tooltip_appears(page: Page) -> None:
+    """Move the mouse over the settled chart and confirm a tooltip shows.
+
+    by_platform.py stacks one subplot per unit in a single canvas, so the
+    exact vertical center can land in the gap between rows rather than on
+    either plot -- try a few y positions rather than only the center.
+    """
+    chart = wait_for_chart_settled(page)
+    box = chart.bounding_box()
+    assert box is not None, "chart canvas reported no bounding box once settled"
+
+    tooltip = page.locator("#vg-tooltip-element")
+    for y_fraction in (0.5, 0.25, 0.75, 0.15, 0.85):
+        page.mouse.move(0, 0)
+        page.mouse.move(
+            box["x"] + box["width"] / 2,
+            box["y"] + box["height"] * y_fraction,
+            steps=5,
+        )
+        page.wait_for_timeout(300)
+        if tooltip.is_visible():
+            return
+
+    expect(tooltip).to_be_visible()
+
+
 def download_chart_png(page: Page) -> Download:
     """Open the Vega actions menu and download the chart as a PNG.
 

@@ -1,4 +1,8 @@
-from helpers import assert_chart_rendered, download_chart_png
+from helpers import (
+    assert_chart_rendered,
+    assert_hover_tooltip_appears,
+    download_chart_png,
+)
 from playwright.sync_api import Page, expect
 
 
@@ -22,6 +26,7 @@ def test_air_temp(page: Page) -> None:
     expect(page.get_by_text("Resampled to daily means for")).to_be_visible()
 
     assert_chart_rendered(page)
+    assert_hover_tooltip_appears(page)
 
     assert download_chart_png(page).suggested_filename.endswith(".png")
 
