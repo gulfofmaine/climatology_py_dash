@@ -33,6 +33,7 @@ requests = ">=2.32.5,<3"
 pydantic = ">=2.12"
 httpx2 = ">=2.5.0,<3"
 sentry-sdk = ">=2.66,<3"
+pint = ">=0.25.3,<0.26"
 
 [tool.pixi.environments]
 test = { features = [ "test" ], solve-group = "default" }

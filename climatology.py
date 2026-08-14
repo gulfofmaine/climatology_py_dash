@@ -10,12 +10,15 @@ with app.setup:
     import climatology_core as core
     import common
     import monitoring
+    import units
 
 
 @app.cell
-def _():
+def _(query_params):
     common.set_defaults(page="climatology")
-    common.sidebar_menu()
+    units_radio = common.units_radio(query_params)
+    common.sidebar_menu(units_radio)
+    return (units_radio,)
 
 
 @app.cell
@@ -116,6 +119,24 @@ def _(platform, timeseries_dropdown):
         )
     monitoring.tag_context(platform=platform["id"], dataset=ts["app_name"])
     return (ts,)
+
+
+@app.cell
+def _(ts, units_radio):
+    # The mean, min and max of an affine conversion are the conversion of the
+    # mean, min and max, so the display frames further down are converted
+    # rather than the observations: flipping the toggle costs no ERDDAP
+    # refetch and no recomputed climatology. The threshold histogram counts
+    # observations, so it is untouched either way.
+    source_unit = ts["data_type"]["units"]
+    display_unit = units.target_unit(
+        ts["data_type"]["standard_name"],
+        source_unit,
+        units_radio.value,
+    )
+    unit_label = units.label(display_unit)
+    monitoring.tag_context(units=units_radio.value)
+    return display_unit, source_unit, unit_label
 
 
 @app.cell
@@ -304,9 +325,12 @@ def _(end_year_dropdown, means, start_year_dropdown, threshold):
 @app.cell
 def _(
     average_period_dropdown,
+    display_unit,
     end_year_dropdown,
     means_filtered,
+    source_unit,
     start_year_dropdown,
+    unit_label,
     year_dropdown,
 ):
     _period = average_period_dropdown.value
@@ -316,7 +340,20 @@ def _(
     with monitoring.operation("climatology.climatology", op="compute"):
         clim_df = core.climatology(means_filtered, _period, year_dropdown.value)
 
-    _range = f"({start_year_dropdown.value} - {end_year_dropdown.value})"
+    # Converted before the rounding below, not after, so the two decimals the
+    # observations justify are two decimals of the displayed unit.
+    _value_columns = ["mean", "min", "max"]
+    clim_df[_value_columns] = units.convert(
+        clim_df[_value_columns],
+        source_unit,
+        display_unit,
+    )
+
+    # The unit rides along in the column names rather than only on the axis:
+    # the tooltip, the selection table, the data table and its CSV download
+    # all address these fields by name, so naming them is all it takes for
+    # every one of them to follow the toggle.
+    _range = f"({start_year_dropdown.value} - {end_year_dropdown.value}) ({unit_label})"
     mean_range_name = f"Mean {_range}"
     min_range_name = f"Min {_range}"
     max_range_name = f"Max {_range}"
@@ -425,23 +462,40 @@ def _(clim_tooltip, df_plot, mean_range_name, time_axis, time_col):
 
 
 @app.cell
-def _(average_period_dropdown, column, df_no_index, year_dropdown):
-    # Rounded here so the hover, the selection table and the data table all
-    # show the two decimals the observations justify.
-    df_year = core.year_series(
+def _(
+    average_period_dropdown,
+    column,
+    df_no_index,
+    display_unit,
+    source_unit,
+    year_dropdown,
+):
+    _df_year = core.year_series(
         df_no_index,
         column,
         average_period_dropdown.value,
         year_dropdown.value,
-    ).round({"mean": 2})
+    )
+    _df_year["mean"] = units.convert(_df_year["mean"], source_unit, display_unit)
+
+    # Rounded here so the hover, the selection table and the data table all
+    # show the two decimals the observations justify.
+    df_year = _df_year.round({"mean": 2})
     return (df_year,)
 
 
 @app.cell
-def _(average_period_dropdown, clim_df, df_year, time_col, year_dropdown):
+def _(
+    average_period_dropdown,
+    clim_df,
+    df_year,
+    time_col,
+    unit_label,
+    year_dropdown,
+):
     year_column = (
         f"{'Daily' if average_period_dropdown.value == core.DAILY else 'Monthly'} mean"
-        f" for {year_dropdown.value}"
+        f" for {year_dropdown.value} ({unit_label})"
     )
 
     # Every layer draws from one frame, so a single hover reports the
@@ -464,8 +518,8 @@ def _(average_period_dropdown, clim_df, df_year, time_col, year_dropdown):
 
 
 @app.cell
-def _(clim_tooltip, df_plot, time_axis, time_col, ts, year_column):
-    _y_title = f"{ts['data_type']['long_name']} ({ts['data_type']['units']})"
+def _(clim_tooltip, df_plot, time_axis, time_col, ts, unit_label, year_column):
+    _y_title = f"{ts['data_type']['long_name']} ({unit_label})"
 
     # Points and a connecting line. year_series lays the means over every period
     # of the year, so a gap in the data is a null and Vega breaks the line there
@@ -530,11 +584,18 @@ def _(end_year_dropdown, platform, start_year_dropdown, ts):
 
 
 @app.cell
-def _(average_period_dropdown, clim_df, df_year, time_col, year_dropdown):
+def _(
+    average_period_dropdown,
+    clim_df,
+    df_year,
+    time_col,
+    unit_label,
+    year_dropdown,
+):
     _period = average_period_dropdown.value
     _year_column = (
         f"{'Daily' if _period == core.DAILY else 'Monthly'} means"
-        f" for {year_dropdown.value}"
+        f" for {year_dropdown.value} ({unit_label})"
     )
 
     df_combined = clim_df.merge(

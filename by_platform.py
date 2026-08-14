@@ -13,12 +13,15 @@ with app.setup:
 
     import common
     import monitoring
+    import units
 
 
 @app.cell
-def _():
+def _(query_params):
     common.set_defaults(page="by_platform")
-    common.sidebar_menu()
+    units_radio = common.units_radio(query_params)
+    common.sidebar_menu(units_radio)
+    return (units_radio,)
 
 
 @app.cell
@@ -98,7 +101,7 @@ def _(platform_selector, time_series_selector):
 
 
 @app.cell
-def _(platform_selector, time_series_selector):
+def _(platform_selector, time_series_selector, units_radio):
     loaded_ts = {}
     unit_ts = {}
 
@@ -110,14 +113,28 @@ def _(platform_selector, time_series_selector):
                 sorted(common.name_for_ts(_ts) for _ts in time_series_selector.value),
             ),
         )
+    monitoring.tag_context(units=units_radio.value)
 
     with mo.status.spinner(title="Loading data from ERDDAP"):
         for _ts in time_series_selector.value:
             _col_name = common.name_for_ts(_ts)
-            _unit = _ts["data_type"]["units"]
+            _source = _ts["data_type"]["units"]
+            _target = units.target_unit(
+                _ts["data_type"]["standard_name"],
+                _source,
+                units_radio.value,
+            )
+            # Keyed by the display label, not the source unit, because that key
+            # is what the subplots are grouped by: a buoy reporting
+            # barometric_pressure in millibars and air_pressure in mbar used to
+            # get two pressure rows, and now gets one.
+            _unit = units.label(_target)
             _key = (_col_name, _unit)
             try:
                 _df = common.load_ts(_ts, _col_name)
+                # load_ts hands back a fresh frame every call, so converting in
+                # place cannot poison the cache behind it.
+                _df[_col_name] = units.convert(_df[_col_name], _source, _target)
                 loaded_ts[_key] = _df
                 unit_ts.setdefault(_unit, []).append(_col_name)
             except common.ErddapLoadError as error:

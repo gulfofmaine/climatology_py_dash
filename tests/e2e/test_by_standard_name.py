@@ -1,7 +1,10 @@
+import re
+
 from helpers import (
     assert_chart_rendered,
     assert_hover_tooltip_appears,
     download_chart_png,
+    hover_for_tooltip,
 )
 from playwright.sync_api import Page, expect
 
@@ -35,3 +38,21 @@ def test_air_temp(page: Page) -> None:
     with page.expect_download() as csv_download_info:
         page.get_by_role("menuitem", name="CSV").first.click()
     assert csv_download_info.value.suggested_filename.endswith(".csv")
+
+
+def test_unit_toggle_switches_the_displayed_unit(page: Page) -> None:
+    """The unit names the melted frame's value column, so it reaches the chart
+    and the tooltip through the one string -- and the tooltip is the only place
+    the DOM can see it, the chart being a canvas."""
+    page.goto("/by_standard_name/?standard_name=air_temperature")
+
+    page.get_by_text("Select...").click()
+    page.get_by_role("option", name="44007").click()
+    page.get_by_role("listbox", name="Suggestions").press("Escape")
+
+    expect(hover_for_tooltip(page)).to_contain_text("(°F)")
+
+    page.get_by_role("radio", name="Metric").click()
+    expect(page).to_have_url(re.compile(r"units=Metric"))
+
+    expect(hover_for_tooltip(page)).to_contain_text("(°C)")

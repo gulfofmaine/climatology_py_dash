@@ -8,6 +8,11 @@ import marimo as mo
 import pandas as pd
 
 import monitoring
+import units
+
+# The unit systems the sidebar toggle offers, English first so it is the
+# default -- see units_radio() below.
+UNIT_SYSTEMS = (units.ENGLISH, units.METRIC)
 
 # Maximum number of rows that Altair will render
 MAX_ROWS = 10_000
@@ -474,8 +479,40 @@ def linked_hover(
     return alt.layer(line, points, rule, hit), hover
 
 
-def sidebar_menu():
-    """Build a sidebar menu"""
+def units_radio(query_params):
+    """The sidebar unit toggle, round-tripped through ``?units=``.
+
+    Build this in the same cell that renders the sidebar. marimo re-runs the
+    *descendants* of the cell that defines a UI element, not the defining cell
+    itself, so keeping the two together is what stops every toggle from
+    re-rendering the sidebar the radio is sitting in.
+
+    Written on change only, like the dropdowns: seeding the parameter eagerly
+    would put ``?units=`` on the URL of a page nobody has touched the toggle
+    on, which the end-to-end suite asserts against.
+    """
+    return mo.ui.radio(
+        options=list(UNIT_SYSTEMS),
+        label="Units",
+        inline=True,
+        value=query_param_default(
+            query_params,
+            "units",
+            UNIT_SYSTEMS,
+            fallback=units.ENGLISH,
+        ),
+        # Guarded like the dropdowns: clearing the selection hands the
+        # callback None, which is not a unit system.
+        on_change=lambda value: query_params.set("units", value) if value else None,
+    )
+
+
+def sidebar_menu(unit_toggle=None):
+    """Build a sidebar menu, with the unit toggle at its foot if given.
+
+    ``unit_toggle`` is the ``units_radio()`` of a page that has one; ``root``
+    and the datum calculator pass nothing and get the menu alone.
+    """
     return mo.sidebar(
         [
             mo.Html("""
@@ -510,6 +547,7 @@ def sidebar_menu():
                 },
                 orientation="vertical",
             ),
+            *([mo.md("---"), unit_toggle] if unit_toggle is not None else []),
         ],
     )
 

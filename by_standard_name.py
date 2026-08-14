@@ -13,6 +13,7 @@ with app.setup:
 
     import common
     import monitoring
+    import units
 
 
 @app.cell
@@ -27,9 +28,11 @@ def _():
 
 
 @app.cell
-def _():
+def _(query_params):
     common.set_defaults(page="by_standard_name")
-    common.sidebar_menu()
+    units_radio = common.units_radio(query_params)
+    common.sidebar_menu(units_radio)
+    return (units_radio,)
 
 
 @app.cell
@@ -118,9 +121,9 @@ def _(selected_ts_keys, standard_name_dropdown):
 
 
 @app.cell
-def _(standard_name_dropdown, standards):
+def _(standard_name_dropdown, standards, units_radio):
     try:
-        unit = standards[standard_name_dropdown.value]["units"]
+        _data_type = standards[standard_name_dropdown.value]
     except KeyError:
         mo.stop(
             True,
@@ -130,7 +133,22 @@ def _(standard_name_dropdown, standards):
                 kind="attention",
             ),
         )
-    return (unit,)
+
+    # Every platform on this page reports the same standard name, and no
+    # standard name Buoy Barn serves is spelled with more than one unit
+    # string, so one source unit covers the whole comparison.
+    source_unit = _data_type["units"]
+    target_unit = units.target_unit(
+        standard_name_dropdown.value,
+        source_unit,
+        units_radio.value,
+    )
+    # ``unit`` names the melted frame's value column, which is also the chart's
+    # y encoding and the tooltip's field, so the display label reaches all
+    # three by being this one string.
+    unit = units.label(target_unit)
+    monitoring.tag_context(units=units_radio.value)
+    return source_unit, target_unit, unit
 
 
 @app.cell
@@ -145,7 +163,14 @@ def _(selected_ts_keys):
 
 
 @app.cell
-def _(platform_options, selected_ts_keys, standard_name_dropdown, unit):
+def _(
+    platform_options,
+    selected_ts_keys,
+    source_unit,
+    standard_name_dropdown,
+    target_unit,
+    unit,
+):
     _wide_dfs = []
 
     if standard_name_dropdown.value:
@@ -176,6 +201,10 @@ def _(platform_options, selected_ts_keys, standard_name_dropdown, unit):
                 _wide_dfs.append(_df)
 
             wide_df = pd.concat(_wide_dfs, axis=1)
+            # Converted once, here, rather than per platform: every column is
+            # the same standard name in the same source unit, and both
+            # accordion downloads below hang off this frame.
+            wide_df = units.convert(wide_df, source_unit, target_unit)
             wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
             wide_melted = wide_melted.rename(
                 columns={"variable": "Timeseries", "value": unit},
