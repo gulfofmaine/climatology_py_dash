@@ -1,6 +1,7 @@
 import base64
 import functools
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 import altair as alt
@@ -92,13 +93,33 @@ def set_defaults(page: str | None = None):
     alt.data_transformers.enable("marimo_inline_csv")
 
 
-@mo.cache
+def _cache_hour() -> str:
+    """The current UTC hour, used to cache-bust load_platform_json() and
+    load_ts() at least hourly.
+
+    mo.cache has no TTL support, so folding a time bucket into the cache key
+    is what forces cached calls to expire.
+    """
+    return datetime.now(UTC).strftime("%Y-%m-%dT%H")
+
+
 def load_platform_json(visibility: str | None = None):
     """Load the platform JSON from the NERACOOS API.
 
-    ``visibility`` filters server side, e.g. ``"climatology"`` for the platforms
-    Buoy Barn flags as suitable for climatologies.
+    ``visibility`` filters server side, e.g. ``"climatology"`` for the
+    platforms Buoy Barn flags as suitable for climatologies. Cached per UTC
+    hour, so a change to Buoy Barn's platform list is picked up at least
+    hourly.
     """
+    return _load_platform_json(visibility, _cache_hour())
+
+
+# Only ever called with visibility=None or "climatology" -- maxsize=4 keeps
+# the current and previous hour for both without ever needing more, and
+# drops older buckets instead of retaining them forever like a plain
+# mo.cache would.
+@mo.lru_cache(maxsize=4)
+def _load_platform_json(visibility: str | None, _hour: str):
     import httpx2
 
     with monitoring.operation(
@@ -316,8 +337,11 @@ def resample_to_budget(
     return resampled, label
 
 
-@mo.cache
-def _load_ts_cached(ts: dict, col_name: str) -> pd.DataFrame:
+# Bigger key space than the platform cache (dataset x variable x depth x
+# hour), so this keeps mo.lru_cache's default maxsize=128 rather than a small
+# fixed number.
+@mo.lru_cache
+def _load_ts_cached(ts: dict, col_name: str, _hour: str) -> pd.DataFrame:
     df = load_ts_from_erddap(ts)
     df.columns = [col_name, *df.columns[1:]]
     return df
@@ -327,9 +351,11 @@ def load_ts(ts: dict, col_name: str) -> pd.DataFrame:
     """Load a timeseries with its value column named ``col_name``.
 
     Returns a fresh frame every call. Callers used to mutate what the cache
-    handed back -- dropping a column from it -- which poisoned every later read.
+    handed back -- dropping a column from it -- which poisoned every later
+    read. Cached per UTC hour, so new ERDDAP readings are picked up at least
+    hourly.
     """
-    return _load_ts_cached(ts, col_name).copy()
+    return _load_ts_cached(ts, col_name, _cache_hour()).copy()
 
 
 @functools.cache
