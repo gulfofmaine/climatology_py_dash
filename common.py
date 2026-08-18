@@ -557,14 +557,14 @@ def sidebar_menu(unit_toggle=None):
                         "https://data.neracoos.org/thredds/": {"label": "THREDDS"},
                     },
                     f"{mo.icon('streamline-ultimate:analytics-graph-lines-2')} Visualize and Compare": {
-                        "/by_platform": {
-                            "label": "By Buoy",
-                            "description": "Graph and download multiple data types for a buoy",
-                        },
-                        "/by_standard_name": {
-                            "label": "By Data Type",
-                            "description": "Compare the same type of data across multiple buoys",
-                        },
+                        # "/by_platform": {
+                        #     "label": "By Buoy",
+                        #     "description": "Graph and download multiple data types for a buoy",
+                        # },
+                        # "/by_standard_name": {
+                        #     "label": "By Data Type",
+                        #     "description": "Compare the same type of data across multiple buoys",
+                        # },
                         "/climatology": {
                             "label": "Climatology",
                             "description": "View climatology for buoys",

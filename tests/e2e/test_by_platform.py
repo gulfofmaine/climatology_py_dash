@@ -10,9 +10,7 @@ from playwright.sync_api import Page, expect
 
 
 def test_western_maine_shelf(page: Page) -> None:
-    page.goto("/")
-    page.get_by_role("navigation").get_by_role("link", name="By Buoy").click()
-    expect(page).to_have_url("/by_platform/")
+    page.goto("/by_platform/")
     page.get_by_test_id("marimo-plugin-dropdown").select_option(
         "B01 - Western Maine Shelf",
     )

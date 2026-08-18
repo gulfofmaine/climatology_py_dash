@@ -10,8 +10,7 @@ from playwright.sync_api import Page, expect
 
 
 def test_air_temp(page: Page) -> None:
-    page.goto("/")
-    page.get_by_role("navigation").get_by_role("link", name="By Data Type").click()
+    page.goto("/by_standard_name/")
     expect(
         page.get_by_role("heading", name="Visualize and Compare by Data"),
     ).to_be_visible()

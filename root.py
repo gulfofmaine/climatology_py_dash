@@ -26,12 +26,13 @@ def _(common):
 @app.cell
 def _():
     button_style = "display: inline-block; background-color: rgb(23, 133, 150); border-radius: 3px; padding: .5rem; text-align: center; color: white"
+    preview_button_style = "display: inline-block; background-color: #ffcb22; border-radius: 3px; padding: .5rem; text-align: center; color: black"
     column_style = "margin: 1rem; min-width: 200px"
-    return button_style, column_style
+    return button_style, column_style, preview_button_style
 
 
 @app.cell
-def _(button_style, column_style, mo):
+def _(button_style, column_style, preview_button_style, mo):
     mo.md(
         f"""
     # NERACOOS Data Products
@@ -76,13 +77,24 @@ def _(button_style, column_style, mo):
 
     <div style="display: flex">
         <div style="{column_style}">
+            <a href="/climatology/">
+                <h3>Climatology</h3>
+            </a>
+            <p>Compare recent conditions to historical norms at buoy locations.</p>
+            <a href="/climatology/">
+                <button style="{button_style}">
+                    View
+                </button>
+            </a>
+        </div>
+        <div style="{column_style}">
             <a href="/by_platform/">
                 <h3>By Buoy</h3>
             </a>
             <p>Visualize, compare, and download multiple data types by buoy.</p>
             <a href="/by_platform/">
-                <button style="{button_style}">
-                    View
+                <button style="{preview_button_style}">
+                    Preview
                 </button>
             </a>
         </div>
@@ -92,19 +104,8 @@ def _(button_style, column_style, mo):
             </a>
             <p>Visualize, compare, and download the same data type across multiple buoys.</p>
             <a href="/by_standard_name/">
-                <button style="{button_style}">
-                    View
-                </button>
-            </a>
-        </div>
-        <div style="{column_style}">
-            <a href="/climatology/">
-                <h3>Climatology</h3>
-            </a>
-            <p>Compare recent conditions to historical norms at buoy locations.</p>
-            <a href="/climatology/">
-                <button style="{button_style}">
-                    View
+                <button style="{preview_button_style}">
+                    Preview
                 </button>
             </a>
         </div>
