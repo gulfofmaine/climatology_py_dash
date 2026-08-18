@@ -214,6 +214,28 @@ def target_unit(standard_name: str, source: str, system: str) -> str:
     return target
 
 
+def display_unit(standard_name: str, system: str) -> str | None:
+    """The unit ``standard_name`` should always be displayed in, independent
+    of any single source's spelling.
+
+    Reads straight out of ``TARGETS`` rather than validating against a live
+    source the way ``target_unit()`` does -- ``TARGETS``'s two entries per
+    standard name are curated and tested as a dimensionally-compatible pair
+    (see test_units.py), so there is nothing to gain by re-checking them
+    against one arbitrary platform's reported spelling, and doing so is
+    actively harmful if that platform's spelling happens to be bad (see
+    by_standard_name.py, which uses this to avoid exactly that).
+
+    Returns ``None`` for a standard name outside ``TARGETS`` -- the caller
+    then has no authoritative unit and must fall back to a live source's own
+    reported spelling.
+    """
+    entry = TARGETS.get(standard_name)
+    if entry is None:
+        return None
+    return entry[1] if system == ENGLISH else entry[0]
+
+
 def convert(values, source: str, target: str):
     """Convert ``values`` (a Series or DataFrame of floats) from ``source`` to
     ``target``, preserving index/columns/name and any NaN gaps.
@@ -222,6 +244,11 @@ def convert(values, source: str, target: str):
     dtype: that dtype leaks into to_csv/to_dict and breaks marimo's table
     download and the vega spec, so the pandas object here is always a normal
     float frame, just with different numbers in it.
+
+    A ``source`` that parses fine but is dimensionally incompatible with
+    ``target`` (e.g. a platform's bare "F" -- parsed by pint as Farad, not
+    Fahrenheit -- against a Fahrenheit target) is handled the same way an
+    unparsable ``source`` is: passthrough, with a monitoring report.
     """
     if source == target:
         return values
@@ -234,7 +261,17 @@ def convert(values, source: str, target: str):
     # Temperature is non-multiplicative (a Celsius-to-Fahrenheit conversion is
     # an offset, not just a scale); going through a Quantity rather than a bare
     # Unit multiplication is what makes pint apply that offset correctly.
-    converted = (values.to_numpy() * source_unit).to(target).magnitude
+    try:
+        converted = (values.to_numpy() * source_unit).to(target).magnitude
+    except pint.DimensionalityError as error:
+        monitoring.report(
+            error,
+            where="units.convert",
+            level="warning",
+            source=source,
+            target=target,
+        )
+        return values
 
     if hasattr(values, "columns"):
         return values.__class__(converted, index=values.index, columns=values.columns)

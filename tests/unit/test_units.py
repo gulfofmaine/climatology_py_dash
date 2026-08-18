@@ -224,6 +224,46 @@ def test_resolved_dimensionality_mismatch_is_then_a_no_op_conversion():
     assert result.tolist() == [1.0, 2.0]
 
 
+def test_display_unit_reads_targets_for_both_systems():
+    assert units.display_unit("air_temperature", units.ENGLISH) == "degree_Fahrenheit"
+    assert units.display_unit("air_temperature", units.METRIC) == "degree_Celsius"
+
+
+def test_display_unit_is_none_outside_targets():
+    assert units.display_unit("some_unknown_standard_name", units.ENGLISH) is None
+
+
+def test_convert_passes_through_an_unresolved_dimensionality_mismatch():
+    """A platform's bare "F" parses fine (pint reads it as Farad) but is not
+    dimensionally compatible with a Fahrenheit target -- unlike
+    test_resolved_dimensionality_mismatch_is_then_a_no_op_conversion above,
+    this pair was never pre-resolved through target_unit(), so convert() must
+    catch the mismatch itself rather than propagate pint's error."""
+    values = pd.Series([1.0, 2.0])
+
+    result = units.convert(values, "F", "degree_Fahrenheit")
+
+    assert result.tolist() == [1.0, 2.0]
+
+
+def test_convert_dimensionality_mismatch_reports_to_monitoring(monkeypatch):
+    reported = {}
+
+    def fake_report(error, *, where, level, **tags):
+        reported["error"] = error
+        reported["where"] = where
+        reported["level"] = level
+        reported["tags"] = tags
+
+    monkeypatch.setattr(units.monitoring, "report", fake_report)
+
+    units.convert(pd.Series([1.0, 2.0]), "F", "degree_Fahrenheit")
+
+    assert reported["where"] == "units.convert"
+    assert reported["level"] == "warning"
+    assert reported["tags"] == {"source": "F", "target": "degree_Fahrenheit"}
+
+
 def test_nan_survives_a_conversion():
     values = pd.Series([0.0, np.nan, 21.5])
 
