@@ -134,21 +134,24 @@ def _(standard_name_dropdown, standards, units_radio):
             ),
         )
 
-    # Every platform on this page reports the same standard name, and no
-    # standard name Buoy Barn serves is spelled with more than one unit
-    # string, so one source unit covers the whole comparison.
-    source_unit = _data_type["units"]
-    target_unit = units.target_unit(
-        standard_name_dropdown.value,
-        source_unit,
-        units_radio.value,
+    # Buoy Barn does not guarantee every platform spells this standard name's
+    # unit the same way (e.g. air_temperature: "celsius" almost everywhere,
+    # bare "F" -- which pint parses as Farad, not Fahrenheit -- on one
+    # platform) -- units.display_unit() reads the target straight out of
+    # TARGETS instead of validating against whichever platform's data_type
+    # happened to land in standards[...], so one bad platform's spelling
+    # can't clobber the label, or (via convert() below, per platform) the
+    # values, for every other platform on the page.
+    target_unit = (
+        units.display_unit(standard_name_dropdown.value, units_radio.value)
+        or _data_type["units"]
     )
     # ``unit`` names the melted frame's value column, which is also the chart's
     # y encoding and the tooltip's field, so the display label reaches all
     # three by being this one string.
     unit = units.label(target_unit)
     monitoring.tag_context(units=units_radio.value)
-    return source_unit, target_unit, unit
+    return target_unit, unit
 
 
 @app.cell
@@ -166,7 +169,6 @@ def _(selected_ts_keys):
 def _(
     platform_options,
     selected_ts_keys,
-    source_unit,
     standard_name_dropdown,
     target_unit,
     unit,
@@ -198,13 +200,20 @@ def _(
                     continue
                 if not _df.index.is_unique:
                     _df = _df.loc[~_df.index.duplicated(keep="first")]
+                # Converted per platform, not once over the whole concatenated
+                # frame: Buoy Barn does not guarantee every platform spells
+                # this standard name's unit the same way, and convert() safely
+                # no-ops a platform whose own spelling doesn't match
+                # target_unit rather than mis-converting it under another
+                # platform's units.
+                _df[_ts_name] = units.convert(
+                    _df[_ts_name],
+                    _ts["data_type"]["units"],
+                    target_unit,
+                )
                 _wide_dfs.append(_df)
 
             wide_df = pd.concat(_wide_dfs, axis=1)
-            # Converted once, here, rather than per platform: every column is
-            # the same standard name in the same source unit, and both
-            # accordion downloads below hang off this frame.
-            wide_df = units.convert(wide_df, source_unit, target_unit)
             wide_melted = pd.melt(wide_df.reset_index(), id_vars="time (UTC)")
             wide_melted = wide_melted.rename(
                 columns={"variable": "Timeseries", "value": unit},
