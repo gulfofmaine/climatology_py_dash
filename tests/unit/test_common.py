@@ -5,6 +5,7 @@ conftest.py.
 """
 
 import altair as alt
+import httpx2
 import pandas as pd
 import pytest
 import sentry_sdk
@@ -436,6 +437,90 @@ def test_load_ts_hands_back_a_fresh_frame_each_call():
     second = common.load_ts(NDBC_SST, "Sea Surface Temperature")
 
     assert "Sea Surface Temperature" in second.columns
+
+
+class FakePlatformResponse:
+    """Stands in for the httpx2 response ``_load_platform_json`` reads."""
+
+    status_code = 200
+
+    def json(self):
+        return {"features": []}
+
+
+def test_load_platform_json_caches_within_the_same_hour(monkeypatch):
+    # mo.lru_cache is a real, process-wide cache (not reset between tests), so
+    # a stale entry from another test using the same fixed hour string would
+    # otherwise make this test order-dependent.
+    common._load_platform_json.cache_clear()
+    calls = []
+
+    def fake_get(*args, **kwargs):
+        calls.append((args, kwargs))
+        return FakePlatformResponse()
+
+    monkeypatch.setattr(httpx2, "get", fake_get)
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T00")
+
+    common.load_platform_json()
+    common.load_platform_json()
+
+    assert len(calls) == 1
+
+
+def test_load_platform_json_refetches_on_a_new_hour(monkeypatch):
+    common._load_platform_json.cache_clear()
+    calls = []
+
+    def fake_get(*args, **kwargs):
+        calls.append((args, kwargs))
+        return FakePlatformResponse()
+
+    monkeypatch.setattr(httpx2, "get", fake_get)
+
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T00")
+    common.load_platform_json()
+
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T01")
+    common.load_platform_json()
+
+    assert len(calls) == 2
+
+
+def test_load_ts_caches_within_the_same_hour(monkeypatch):
+    common._load_ts_cached.cache_clear()
+    calls = []
+
+    def fake_load_ts_from_erddap(ts):
+        calls.append(ts)
+        return erddap_frame(3)
+
+    monkeypatch.setattr(common, "load_ts_from_erddap", fake_load_ts_from_erddap)
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T00")
+
+    common.load_ts(NDBC_SST, "Sea Surface Temperature")
+    common.load_ts(NDBC_SST, "Sea Surface Temperature")
+
+    assert len(calls) == 1
+
+
+def test_load_ts_refetches_on_a_new_hour(monkeypatch):
+    common._load_ts_cached.cache_clear()
+    calls = []
+
+    def fake_load_ts_from_erddap(ts):
+        calls.append(ts)
+        return erddap_frame(3)
+
+    monkeypatch.setattr(common, "load_ts_from_erddap", fake_load_ts_from_erddap)
+
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T00")
+    common.load_ts(NDBC_SST, "Sea Surface Temperature")
+
+    monkeypatch.setattr(common, "_cache_hour", lambda: "2026-08-18T01")
+    common.load_ts(NDBC_SST, "Sea Surface Temperature")
+
+    assert len(calls) == 2
 
 
 def test_admonition_offers_no_report_link_without_a_dsn(monkeypatch):
