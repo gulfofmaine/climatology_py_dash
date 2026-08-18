@@ -258,7 +258,7 @@ def _(average_period_dropdown, column, df_no_index, query_params):
         means = core.period_means(df_no_index, column, _period)
 
     _per = "day" if _period == core.DAILY else "month"
-    _threshold_chart = (
+    threshold_chart = (
         alt.Chart(means)
         .mark_bar()
         .encode(
@@ -286,27 +286,7 @@ def _(average_period_dropdown, column, df_no_index, query_params):
         ),
     )
 
-    mo.accordion(
-        {
-            "Threshold configuration": mo.hstack(
-                [
-                    mo.vstack(
-                        [
-                            threshold,
-                            mo.md("""
-                With the data being dynamic and the rate of observations possibly changing over time, we are only able to set reasonable defaults for a minimum number of observations to be included in a day/month to be eligible to generate climatology from.
-
-                - The default daily threshold is 18 considering a minimum of 3/4 hourly obsevations
-                - The default monthly threshold is 20 for 2/3rds of daily observations
-                """),
-                        ],
-                    ),
-                    _threshold_chart,
-                ],
-            ),
-        },
-    )
-    return means, threshold
+    return means, threshold, threshold_chart
 
 
 @app.cell
@@ -580,6 +560,30 @@ def _(end_year_dropdown, platform, start_year_dropdown, ts):
                 f"Climatology calculated from {start_year_dropdown.value} to {end_year_dropdown.value}",
             ),
         ],
+    )
+
+
+@app.cell
+def _(threshold, threshold_chart):
+    mo.accordion(
+        {
+            "Threshold configuration": mo.hstack(
+                [
+                    mo.vstack(
+                        [
+                            threshold,
+                            mo.md("""
+                With the data being dynamic and the rate of observations possibly changing over time, we are only able to set reasonable defaults for a minimum number of observations to be included in a day/month to be eligible to generate climatology from.
+
+                - The default daily threshold is 18 considering a minimum of 3/4 hourly obsevations
+                - The default monthly threshold is 20 for 2/3rds of daily observations
+                """),
+                        ],
+                    ),
+                    threshold_chart,
+                ],
+            ),
+        },
     )
 
 
