@@ -1,5 +1,5 @@
 # Keep the pixi version here in lockstep with the pinned
 # ghcr.io/prefix-dev/pixi:<version>-noble tag in the prod Dockerfile.
 [tools]
-pixi = "0.76.0"
+pixi = "0.76.2"
 prek = "0.4.12"
