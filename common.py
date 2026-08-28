@@ -544,6 +544,12 @@ def sidebar_menu(unit_toggle=None):
                             "description": "View climatology for buoys",
                         },
                     },
+                    f"{mo.icon('mdi:radar')} Imagery": {
+                        "/whoi_radar": {
+                            "label": "WHOI HF Radar",
+                            "description": "Daily surface current images from WHOI's radar",
+                        },
+                    },
                 },
                 orientation="vertical",
             ),
