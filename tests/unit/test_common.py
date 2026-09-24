@@ -421,6 +421,43 @@ def test_load_ts_from_erddap_raises_for_a_dataset_that_is_not_there(sentry_event
     assert "gov-ndbc-does-not-exist" in event["transaction"]
 
 
+class FakeErddapResponse:
+    """Stands in for the requests response ``erddap_to_pandas`` reads."""
+
+    def __init__(self, latest: str):
+        self.content = (
+            f"time (UTC),sea_surface_temperature (degree_C)\n{latest},12.5\n"
+        ).encode()
+        self.text = self.content.decode()
+
+    def raise_for_status(self):
+        pass
+
+
+def test_load_ts_from_erddap_fetches_fresh_data_every_call(monkeypatch):
+    """erddapy's to_pandas() caches responses by URL for the life of the
+    process, which left the app showing data days old until the pod was
+    restarted. Each load has to reach ERDDAP."""
+    import requests
+
+    calls = []
+    latest = iter(["2026-09-16T00:00:00Z", "2026-09-24T00:00:00Z"])
+
+    def fake_get(url, timeout=None, **_kwargs):
+        calls.append((url, timeout))
+        return FakeErddapResponse(next(latest))
+
+    monkeypatch.setattr(requests, "get", fake_get)
+
+    first = common.load_ts_from_erddap(NDBC_SST)
+    second = common.load_ts_from_erddap(NDBC_SST)
+
+    assert len(calls) == 2
+    assert calls[0][0] == calls[1][0]
+    assert all(timeout == common.ERDDAP_TIMEOUT for _, timeout in calls)
+    assert first.index.max() < second.index.max()
+
+
 @pytest.mark.vcr
 def test_load_ts_names_the_value_column():
     df = common.load_ts(NDBC_SST, "Sea Surface Temperature")

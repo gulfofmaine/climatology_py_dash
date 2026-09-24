@@ -111,7 +111,7 @@ def _(common, dataset_id, erddapy, mo, monitoring, use_qartod):
         ),
     ):
         try:
-            df = e.to_pandas(index_col="time (UTC)", parse_dates=True).dropna()
+            df = common.erddap_to_pandas(e).dropna()
         except Exception as error:  # noqa: BLE001
             # This is a raw erddapy load with no ErddapLoadError wrapper,
             # unlike common.load_ts_from_erddap -- report it directly, since
