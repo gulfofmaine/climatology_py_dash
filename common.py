@@ -263,8 +263,8 @@ def erddap_to_pandas(e) -> pd.DataFrame:
     Used instead of ``e.to_pandas()``, which has two problems for a
     long-running server. It fetches through a process-wide
     ``functools.lru_cache`` keyed on the URL, with no expiry, and our URLs
-    never change -- so every later load got the first response's bytes back
-    until the pod restarted, however much newer data ERDDAP had. And it
+    never change. Later loads get the first response's bytes back
+    until the pod restarts, however much newer data ERDDAP had. And it
     ignores ``e.requests_kwargs``, so ERDDAP_TIMEOUT never applied.
     """
     import requests
