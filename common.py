@@ -1,5 +1,6 @@
 import base64
 import functools
+import io
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -256,6 +257,39 @@ def erddap_download_url(ts: dict) -> str:
     return erddap_client(ts).get_download_url()
 
 
+def erddap_to_pandas(e) -> pd.DataFrame:
+    """Fetch an erddapy client's tabledap request as a time-indexed frame.
+
+    Used instead of ``e.to_pandas()``, which has two problems for a
+    long-running server. It fetches through a process-wide
+    ``functools.lru_cache`` keyed on the URL, with no expiry, and our URLs
+    never change. Later loads get the first response's bytes back
+    until the pod restarts, however much newer data ERDDAP had. And it
+    ignores ``e.requests_kwargs``, so ERDDAP_TIMEOUT never applied.
+    """
+    import requests
+    from erddapy.core.url import quote_url
+
+    # Quoted the same way erddapy does, which newer ERDDAP servers require.
+    url = quote_url(e.get_download_url(response="csvp"))
+    response = requests.get(url, timeout=ERDDAP_TIMEOUT)
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as err:
+        # ERDDAP's error body says why it rejected the request, which the
+        # status line alone does not.
+        raise requests.exceptions.HTTPError(response.text) from err
+    try:
+        return pd.read_csv(
+            io.BytesIO(response.content),
+            index_col="time (UTC)",
+            parse_dates=True,
+        )
+    except Exception as err:
+        msg = f"Could not read url {url} with pandas.read_csv."
+        raise ValueError(msg) from err
+
+
 def load_ts_from_erddap(ts: dict) -> pd.DataFrame:
     """Load a timeseries from ERDDAP, or raise ``ErddapLoadError``."""
     import requests
@@ -269,7 +303,7 @@ def load_ts_from_erddap(ts: dict) -> pd.DataFrame:
         variable=ts["variable"],
     ):
         try:
-            df = e.to_pandas(index_col="time (UTC)", parse_dates=True)
+            df = erddap_to_pandas(e)
         except (requests.exceptions.RequestException, OSError, ValueError) as error:
             # ERDDAP answers a rejected request with a non-CSV body, which
             # reaches us as a pandas parse error rather than as an HTTP
