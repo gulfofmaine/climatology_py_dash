@@ -34,9 +34,26 @@ pydantic = ">=2.12"
 httpx2 = ">=2.5.0,<3"
 sentry-sdk = ">=2.66,<3"
 pint = ">=0.25.3,<0.26"
+# CVE-2026-111497 ("Node2Shell"): Brotli <=1.2.0 has an out-of-bounds write in
+# its decoder, and urllib3 (so requests) and httpx load it automatically to
+# decode `Content-Encoding: br` responses. These packages aren't used directly,
+# they only floor the transitive versions at the patched 1.2.1.
+brotli-python = ">=1.2.1"
+libbrotlidec = ">=1.2.1"
 
 [tool.pixi.environments]
 test = { features = [ "test" ], solve-group = "default" }
+
+# The Brotli 1.2.1 builds that fix CVE-2026-111497 were published inside the
+# workspace's 7 day exclude-newer window, so they're exempt from it. These
+# overrides can go once the builds are older than 7 days.
+[tool.pixi.exclude-newer]
+brotli = "0d"
+brotli-bin = "0d"
+brotli-python = "0d"
+libbrotlicommon = "0d"
+libbrotlidec = "0d"
+libbrotlienc = "0d"
 
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
