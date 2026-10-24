@@ -34,9 +34,26 @@ pydantic = ">=2.12"
 httpx2 = ">=2.5.0,<3"
 sentry-sdk = ">=2.66,<3"
 pint = ">=0.25.3,<0.26"
+# Not used directly: floors for the transitive brotli decoder, which before
+# 1.2.1 is vulnerable to CVE-2026-111497. The packages pin each other exactly,
+# so raising these two pulls the rest of the family with them.
+brotli-python = ">=1.2.1"
+libbrotlidec = ">=1.2.1"
 
 [tool.pixi.environments]
 test = { features = [ "test" ], solve-group = "default" }
+
+# The fixed brotli and Node.js builds are newer than the workspace's 7d
+# exclude-newer cutoff. Drop these once the cutoff has caught up.
+[tool.pixi.exclude-newer]
+brotli = "0d"
+brotli-bin = "0d"
+brotli-python = "0d"
+libbrotlicommon = "0d"
+libbrotlidec = "0d"
+libbrotlienc = "0d"
+nodejs = "0d"
+c-ares = "0d"  # required by the fixed nodejs
 
 [tool.pixi.feature.test.dependencies]
 pytest = ">=9"
@@ -52,6 +69,9 @@ pytest-recording = ">=0.13,<1"
 # grouping that stops them being bumped apart.
 playwright = ">=1.62,<1.63"
 playwright-python = ">=1.62,<1.63"
+# Not used directly: playwright's driver runs on Node.js, whose bundled brotli
+# is vulnerable to CVE-2026-111497 before 26.12.1.
+nodejs = ">=26.12.1"
 
 [tool.pixi.feature.test.tasks]
 unit = "pytest tests/unit"
