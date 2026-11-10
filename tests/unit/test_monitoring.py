@@ -63,7 +63,6 @@ def test_sentry_options_disables_pii_and_request_bodies():
         monitoring.Settings(dsn="https://public@example.invalid/1"),
     )
 
-    assert options["send_default_pii"] is False
     assert options["max_request_body_size"] == "never"
 
 

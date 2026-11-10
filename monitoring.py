@@ -194,7 +194,6 @@ def sentry_options(settings: Settings | None = None) -> dict:
         # request bodies. The query string (platform, data type, date range)
         # still comes through on each event and is the real reproduction
         # payload.
-        "send_default_pii": False,
         "max_request_body_size": "never",
         "traces_sampler": _traces_sampler,
         "enable_logs": True,
