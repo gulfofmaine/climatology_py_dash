@@ -259,10 +259,11 @@ def convert(values, source: str, target: str):
         return values
 
     # Temperature is non-multiplicative (a Celsius-to-Fahrenheit conversion is
-    # an offset, not just a scale); going through a Quantity rather than a bare
-    # Unit multiplication is what makes pint apply that offset correctly.
+    # an offset, not just a scale). Build the Quantity directly: since pint
+    # 0.26.2, `array * Unit("degC")` goes through numpy's multiply and raises
+    # OffsetUnitCalculusError, while the constructor applies the offset.
     try:
-        converted = (values.to_numpy() * source_unit).to(target).magnitude
+        converted = ureg.Quantity(values.to_numpy(), source_unit).to(target).magnitude
     except pint.DimensionalityError as error:
         monitoring.report(
             error,
