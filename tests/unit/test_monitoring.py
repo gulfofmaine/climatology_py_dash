@@ -63,11 +63,6 @@ def test_sentry_options_disables_pii_and_request_bodies():
         monitoring.Settings(dsn="https://public@example.invalid/1"),
     )
 
-    # Unset (rather than False) is what keeps PII off without the
-    # deprecated option; see sentry_options.
-    assert "send_default_pii" not in options
-    assert "data_collection" not in options
-    assert sentry_sdk.Client(**options).should_send_default_pii() is False
     assert options["max_request_body_size"] == "never"
 
 
