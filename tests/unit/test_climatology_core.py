@@ -1,6 +1,6 @@
 """Unit tests for the pure climatology math."""
 
-import datetime
+import datetime as dt
 
 import pandas as pd
 import pytest
@@ -160,7 +160,7 @@ def test_climatology_averages_the_same_calendar_day_across_years():
     assert march_first["mean"].item() == 301.0
     assert march_first["min"].item() == 301.0
     assert march_first["max"].item() == 301.0
-    assert march_first["min_date"].item() == datetime.date(2021, 3, 1)
+    assert march_first["min_date"].item() == dt.date(2021, 3, 1)
 
 
 def leap_and_non_leap_years() -> pd.DataFrame:
@@ -244,8 +244,8 @@ def test_climatology_reports_the_year_that_set_each_extreme():
     clim = core.climatology(filtered, core.DAILY, display_year=2023)
 
     first = clim.iloc[0]
-    assert first["max_date"] == datetime.date(2021, 1, 1)
-    assert first["min_date"] == datetime.date(2022, 1, 1)
+    assert first["max_date"] == dt.date(2021, 1, 1)
+    assert first["min_date"] == dt.date(2022, 1, 1)
 
 
 def test_climatology_monthly_is_indexed_by_month():
