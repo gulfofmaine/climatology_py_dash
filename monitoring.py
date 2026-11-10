@@ -194,7 +194,13 @@ def sentry_options(settings: Settings | None = None) -> dict:
         # request bodies. The query string (platform, data type, date range)
         # still comes through on each event and is the real reproduction
         # payload.
-        "send_default_pii": False,
+        #
+        # PII stays off by leaving both `send_default_pii` and
+        # `data_collection` unset, which the SDK treats as
+        # `send_default_pii=False`. Passing `send_default_pii` is deprecated
+        # (a DeprecationWarning since sentry-sdk 2.73). An explicit
+        # `data_collection` dict opts into its own defaults, which collect
+        # more than this.
         "max_request_body_size": "never",
         "traces_sampler": _traces_sampler,
         "enable_logs": True,
