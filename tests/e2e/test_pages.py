@@ -8,6 +8,7 @@ because marimo renders client-side over a websocket.
 
 import re
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 from playwright.sync_api import APIRequestContext, Page, Playwright, expect
@@ -109,6 +110,33 @@ def test_public_logo_is_served(api_request_context: APIRequestContext) -> None:
     response = api_request_context.get("/static/neracoos.png")
     assert response.status == 200
     assert response.headers["content-type"].startswith("image/")
+
+
+PUBLIC_DIR = Path(__file__).parents[2] / "public"
+
+
+@pytest.mark.parametrize(
+    ("icon", "source"),
+    [
+        ("favicon.ico", "favicon.ico"),
+        ("apple-touch-icon.png", "neracoos_favicon.png"),
+    ],
+)
+@pytest.mark.parametrize("route", [route for route, _ in PAGES])
+def test_page_icons_are_neracoos(
+    api_request_context: APIRequestContext,
+    route: str,
+    icon: str,
+    source: str,
+) -> None:
+    """Every page's icons are NERACOOS's, not marimo's.
+
+    marimo's page links its icons relatively ("./favicon.ico"), so each
+    sub-mounted app asks for its own copy, e.g. /by_platform/favicon.ico.
+    """
+    response = api_request_context.get(f"{route}{icon}")
+    assert response.status == 200
+    assert response.body() == (PUBLIC_DIR / source).read_bytes()
 
 
 def test_static_route_does_not_shadow_marimo(
