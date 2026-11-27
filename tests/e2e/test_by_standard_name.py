@@ -35,7 +35,10 @@ def test_air_temp(page: Page) -> None:
     page.get_by_role("button", name="Full dataframe and download").click()
     page.get_by_role("button", name="Export").click()
     with page.expect_download() as csv_download_info:
-        page.get_by_role("menuitem", name="CSV").first.click()
+        page.get_by_role("dialog", name="Export table").get_by_role(
+            "button",
+            name="Download CSV",
+        ).click()
     assert csv_download_info.value.suggested_filename.endswith(".csv")
 
 
