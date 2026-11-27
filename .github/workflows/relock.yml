@@ -27,7 +27,7 @@ jobs:
   relock:
     name: Regenerate pixi.lock
     if: github.repository == 'gulfofmaine/climatology_py_dash'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: write # push the refreshed lock back to the Renovate branch

@@ -23,7 +23,7 @@ concurrency:
 jobs:
   build:
     name: Build Docker Image
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -70,7 +70,7 @@ jobs:
 
   unit:
     name: Unit tests
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -93,7 +93,7 @@ jobs:
   e2e:
     name: End-to-end tests
     needs: build
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
     permissions:
       contents: read
@@ -202,7 +202,7 @@ jobs:
     name: Check all jobs passed
     if: always()
     needs: [build, unit, e2e]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 2
     permissions: {}
     steps:
@@ -214,7 +214,7 @@ jobs:
   push:
     name: Push Docker Image
     needs: [build, unit, e2e]
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     permissions:
       contents: read
