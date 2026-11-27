@@ -11,7 +11,7 @@ RUN --mount=type=cache,id=pixi_climatology,target=/root/.cache/rattler/cache \
     pixi install --frozen -e default
 
 COPY --link *.py style.css ./
-COPY --link public/neracoos.png ./public/
+COPY --link public/neracoos.png public/favicon.ico public/neracoos_favicon.png ./public/
 
 RUN mkdir __marimo__ && \
     chmod -R 777 __marimo__

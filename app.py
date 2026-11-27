@@ -1,5 +1,8 @@
+from pathlib import Path
+
 import marimo
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 import monitoring
 import units
@@ -29,6 +32,30 @@ server = (
 )
 
 app = FastAPI()
+
+PUBLIC_DIR = Path(__file__).parent / "public"
+
+# marimo's page template links its icons relatively ("./favicon.ico"), so each
+# mounted notebook asks for its own copy (/by_platform/favicon.ico, ...) and
+# gets marimo's. Answer those requests with NERACOOS's icons instead, ahead of
+# the marimo mount below, rather than adding a second <link rel="icon"> that
+# browsers may or may not prefer over marimo's.
+_ICONS = {
+    "favicon.ico": PUBLIC_DIR / "favicon.ico",
+    "apple-touch-icon.png": PUBLIC_DIR / "neracoos_favicon.png",
+}
+
+
+def _add_icon_routes(name: str, source: Path) -> None:
+    def icon() -> FileResponse:
+        return FileResponse(source)
+
+    app.get(f"/{name}", include_in_schema=False)(icon)
+    app.get(f"/{{notebook}}/{name}", include_in_schema=False)(icon)
+
+
+for _name, _source in _ICONS.items():
+    _add_icon_routes(_name, _source)
 
 # public/ is served by granian, ahead of this app -- see the `serve` task in
 # pyproject.toml. marimo's own public-file convention (a relative
