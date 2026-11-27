@@ -67,8 +67,8 @@ pytest-recording = ">=0.13,<1"
 # lock-file maintenance, which fails every browser assertion instantly with an
 # empty message. Keep both bounds identical, and see renovate.json for the
 # grouping that stops them being bumped apart.
-playwright = ">=1.62,<1.63"
-playwright-python = ">=1.62,<1.63"
+playwright = ">=1.65,<1.66"
+playwright-python = ">=1.65,<1.66"
 # Not used directly: playwright's driver runs on Node.js, whose bundled brotli
 # is vulnerable to CVE-2026-111497 before 26.12.1.
 nodejs = ">=26.12.1"
